@@ -9,6 +9,8 @@
  R package "diversityForest" under GPL3 license.
  #-------------------------------------------------------------------------------*/
 
+#include <Rcpp.h>
+ 
 #include <algorithm>
 #include <iostream>
 #include <iterator>
@@ -102,9 +104,41 @@ bool TreeRegression::splitNodeInternal(size_t nodeID, std::vector<size_t>& possi
   return false;
 }
 
-// asdf: New function
+// asdf: New function: Split node using univariate, binary splitting:
 bool TreeRegression::splitNodeUnivariateInternal(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) {
-  // Auffuellen
+
+  // Stop if maximum node size or depth reached
+    size_t num_samples_node = end_pos[nodeID] - start_pos[nodeID];
+  if (num_samples_node <= min_node_size || (nodeID >= last_left_nodeID && max_depth > 0 && depth >= max_depth)) {
+    split_values[nodeID] = estimate(nodeID);
+    return true;
+  }
+  
+  // Check if node is pure and set split_value to estimate and stop if pure
+  bool pure = true;
+  double pure_value = 0;
+  for (size_t pos = start_pos[nodeID]; pos < end_pos[nodeID]; ++pos) {
+    size_t sampleID = sampleIDs[pos];
+    double value = data->get(sampleID, dependent_varID);
+    if (pos != start_pos[nodeID] && value != pure_value) {
+      pure = false;
+      break;
+    }
+    pure_value = value;
+  }
+  if (pure) {
+    split_values[nodeID] = pure_value;
+    return true;
+  }
+  
+  // Find best split, stop if no decrease of impurity
+  bool stop = findBestSplitUnivariate(nodeID, sampled_varIDs_values);
+  
+  if (stop) {
+    split_values[nodeID] = estimate(nodeID);
+    return true;
+  }
+
   return false;
 }
 
@@ -180,12 +214,103 @@ bool TreeRegression::findBestSplit(size_t nodeID, std::vector<size_t>& possible_
   return false;
 }
 
-// asdf: New function
+// asdf: New function: Find the best split using univariate,
+// binary splitting:
 bool TreeRegression::findBestSplitUnivariate(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) {
-  // Auffuellen
-  return false;
-}
+  
+  size_t num_samples_node = end_pos[nodeID] - start_pos[nodeID];
+  double best_decrease = -1;
+  size_t best_varID = 0;
+  double best_value = 0;
+  
+    // Only split if there is at least one sampled covariate/split pair:
+  if(sampled_varIDs_values.size() > 0) {
+    
+    // Compute sum of responses in node
+    double sum_node = 0;
+    for (size_t pos = start_pos[nodeID]; pos < end_pos[nodeID]; ++pos) {
+      size_t sampleID = sampleIDs[pos];
+      sum_node += data->get(sampleID, dependent_varID);
+    }
+    
+  // Cycle through the covariate/split pairs and
+  // determine the best split out of these:
+  /////////////////
+  
+    size_t varIDtemp; 
+    double valuetemp;
+    
+    // Count samples until split_value reached
+    for (size_t i = 0; i < sampled_varIDs_values.size(); ++i) {
+      
+      varIDtemp = std::get<0>(sampled_varIDs_values[i]);
+      valuetemp = std::get<1>(sampled_varIDs_values[i]);
+      
+      // -1 because no split possible at largest value
+      ///const size_t num_splits = possible_split_values.size() - 1;
+      double sums_right = 0;
+      size_t n_right = 0;
+      
+      // Sum in right child and possbile split
+      for (size_t pos = start_pos[nodeID]; pos < end_pos[nodeID]; ++pos) {
+        size_t sampleID = sampleIDs[pos];
+        double value = data->get(sampleID, varIDtemp);
+        double response = data->get(sampleID, dependent_varID);
 
+        if (value > valuetemp) {
+          ++n_right;
+          sums_right += response;
+        }
+      }
+      
+      // Number of samples in left child:
+      size_t n_left = num_samples_node - n_right;
+      
+	  // Sums:
+      double sum_right = sums_right;
+      double sum_left = sum_node - sum_right;
+      
+	  // Decrease:
+	  double decrease = sum_left * sum_left / (double) n_left + sum_right * sum_right / (double) n_right;
+      
+	  // Some information I returned to the console while developing:
+      ///Rcpp::Rcout << "varIDtemp: " << varIDtemp << std::endl;
+      ///Rcpp::Rcout << "valuetemp: " << valuetemp << std::endl;
+      ///Rcpp::Rcout << "sum_left: " << sum_left << std::endl;
+      ///Rcpp::Rcout << "n_left: " << n_left << std::endl;
+      ///Rcpp::Rcout << "sum_right: " << sum_right << std::endl;
+      ///Rcpp::Rcout << "n_right: " << n_right << std::endl;
+      ///Rcpp::Rcout << "decrease: " << decrease << std::endl;
+      
+      // If better than before, use this
+      if (decrease > best_decrease) {
+        best_value = valuetemp;
+        best_varID = varIDtemp;
+        best_decrease = decrease;
+      }
+    }
+    
+  }
+  
+  	  // Some information I returned to the console while developing:
+  ///Rcpp::Rcout << "best_varID: " << best_varID << std::endl;
+  ///Rcpp::Rcout << "best_value: " << best_value << std::endl;
+  	  // Rcpp::Rcout << "class_counts_right: " << std::endl;
+  // std::copy(begin(class_counts_right), end(class_counts_right), std::ostream_iterator<size_t>(std::cout, " "));
+  
+  // Stop if no good split found
+  if (best_decrease < 0) {
+    return true;
+  }
+  
+  // Save best values
+  split_varIDs[nodeID] = best_varID;
+  split_values[nodeID] = best_value;
+  
+  return false;
+  
+}
+  
 void TreeRegression::findBestSplitValueSmallQ(size_t nodeID, size_t varID, double sum_node, size_t num_samples_node,
     double& best_value, size_t& best_varID, double& best_decrease) {
 

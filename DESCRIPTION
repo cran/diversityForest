@@ -1,8 +1,8 @@
 Package: diversityForest
 Type: Package
 Title: Diversity Forests
-Version: 0.1.0
-Date: 2020-01-07
+Version: 0.2.0
+Date: 2020-01-29
 Author: Roman Hornung [aut, cre], Marvin N. Wright [ctb, cph]
 Maintainer: Roman Hornung <hornung@ibe.med.uni-muenchen.de>
 Description: Implements diversity forests as described in an
@@ -15,9 +15,10 @@ Description: Implements diversity forests as described in an
   'diversityForest' are found in the help pages of 'ranger' (version 0.11.0). 
   The code in the example sections of the 'diversityForest' manual can be used 
   as a template for all basic application scenarios with respect to 
-  classification using univariate, binary splitting. Some function 
-  arguments adopted from the 'ranger' package are not be useable
-  with diversity forests (for the current package version).
+  classification, regression and survival prediction using univariate, 
+  binary splitting. Some function arguments adopted from the 'ranger' 
+  package are not be useable with diversity forests (for the current 
+  package version).
 SystemRequirements: C++11
 Encoding: UTF-8
 License: GPL-3
@@ -27,6 +28,6 @@ Depends: R (>= 3.1)
 Suggests: survival, testthat
 RoxygenNote: 6.1.1
 NeedsCompilation: yes
-Packaged: 2020-01-07 08:43:34 UTC; hornung
+Packaged: 2020-01-29 18:24:59 UTC; hornung
 Repository: CRAN
-Date/Publication: 2020-01-08 16:20:09 UTC
+Date/Publication: 2020-01-29 19:00:02 UTC

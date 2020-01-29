@@ -9,6 +9,8 @@
  R package "diversityForest" under GPL3 license.
  #-------------------------------------------------------------------------------*/
 
+#include <Rcpp.h>
+ 
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -98,10 +100,11 @@ bool TreeSurvival::splitNodeInternal(size_t nodeID, std::vector<size_t>& possibl
   }
 }
 
-// asdf: New function
+// asdf: New function: Split node using univariate, binary splitting:
 bool TreeSurvival::splitNodeUnivariateInternal(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) {
-  // Auffuellen
-  return false;
+
+  // Find best split, stop if no improvement in split criterion value
+  return findBestSplitUnivariate(nodeID, sampled_varIDs_values);
 }
 
 bool TreeSurvival::findBestSplit(size_t nodeID, std::vector<size_t>& possible_split_varIDs) {
@@ -157,10 +160,123 @@ bool TreeSurvival::findBestSplit(size_t nodeID, std::vector<size_t>& possible_sp
   }
 }
 
-// asdf: New function
+// asdf: New function: Find the best split using univariate,
+// binary splitting:
 bool TreeSurvival::findBestSplitUnivariate(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) {
-  // Auffuellen
-  return false;
+
+  double best_logrank = -1;
+  size_t num_samples_node = end_pos[nodeID] - start_pos[nodeID];
+  size_t best_varID = 0;
+  double best_value = 0;
+  
+  computeDeathCounts(nodeID);
+  
+  // Stop if maximum node size or depth reached (will check again for each child node)
+  if (num_samples_node <= min_node_size || (nodeID >= last_left_nodeID && max_depth > 0 && depth >= max_depth)) {
+    computeSurvival(nodeID);
+    return true;
+  }
+  
+    // Only split if there is at least one sampled covariate/split pair:
+  if(sampled_varIDs_values.size() > 0) {
+    
+	  // Stop early if no split possible
+  if (num_samples_node >= 2 * min_node_size) {
+
+    // Cycle through the covariate/split pairs and
+  // determine the best split out of these:
+  /////////////////
+  
+    size_t varIDtemp; 
+    double valuetemp;
+    
+    for (size_t i = 0; i < sampled_varIDs_values.size(); ++i) {
+
+		// Get current covariate ID and split:
+      varIDtemp = std::get<0>(sampled_varIDs_values[i]);
+      valuetemp = std::get<1>(sampled_varIDs_values[i]);
+      
+  // Initialize
+  std::vector<size_t> num_deaths_right_child(num_timepoints);
+  std::vector<size_t> delta_samples_at_risk_right_child(num_timepoints);
+  size_t num_samples_right_child = 0;
+    double numerator = 0;
+    double denominator_squared = 0;
+
+    // Count deaths in right child per timepoint
+    for (size_t pos = start_pos[nodeID]; pos < end_pos[nodeID]; ++pos) {
+      size_t sampleID = sampleIDs[pos];
+      size_t survival_timeID = (*response_timepointIDs)[sampleID];
+      double value = data->get(sampleID, varIDtemp);
+
+      // If in right child, count
+      // In right child, if bitwise splitID at position factorID is 1
+      if (value > valuetemp) {
+        ++num_samples_right_child;
+        ++delta_samples_at_risk_right_child[survival_timeID];
+        if (data->get(sampleID, status_varID) == 1) {
+          ++num_deaths_right_child[survival_timeID];
+        }
+      }
+
+    }
+
+    // Stop if minimal node size reached
+    size_t num_samples_left_child = num_samples_node - num_samples_right_child;
+    if (num_samples_right_child < min_node_size || num_samples_left_child < min_node_size) {
+      continue;
+    }
+
+    // Compute logrank test statistic for this split
+    size_t num_samples_at_risk_right_child = num_samples_right_child;
+    for (size_t t = 0; t < num_timepoints; ++t) {
+      if (num_samples_at_risk[t] < 2 || num_samples_at_risk_right_child < 1) {
+        break;
+      }
+
+      if (num_deaths[t] > 0) {
+        // Numerator and demoninator for log-rank test, notation from Ishwaran et al.
+        double di = (double) num_deaths[t];
+        double di1 = (double) num_deaths_right_child[t];
+        double Yi = (double) num_samples_at_risk[t];
+        double Yi1 = (double) num_samples_at_risk_right_child;
+        numerator += di1 - Yi1 * (di / Yi);
+        denominator_squared += (Yi1 / Yi) * (1.0 - Yi1 / Yi) * ((Yi - di) / (Yi - 1)) * di;
+      }
+
+      // Reduce number of samples at risk for next timepoint
+      num_samples_at_risk_right_child -= delta_samples_at_risk_right_child[t];
+    }
+    double logrank = -1;
+    if (denominator_squared != 0) {
+      logrank = fabs(numerator / sqrt(denominator_squared));
+    }
+
+	    // If better than before, use this
+    if (logrank > best_logrank) {
+      best_value = valuetemp;
+      best_varID = varIDtemp;
+      best_logrank = logrank;
+    }
+	
+  }
+  
+}
+  
+  }
+  
+    // Stop and save CHF if no good split found (this is terminal node).
+  if (best_logrank < 0) {
+    computeSurvival(nodeID);
+    return true;
+  }
+    
+  // If not terminal node save best values
+    split_varIDs[nodeID] = best_varID;
+    split_values[nodeID] = best_value;
+
+    return false;
+
 }
 
 bool TreeSurvival::findBestSplitMaxstat(size_t nodeID, std::vector<size_t>& possible_split_varIDs) {

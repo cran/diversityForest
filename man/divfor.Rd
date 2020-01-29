@@ -46,19 +46,19 @@ divfor(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
 
 \item{class.weights}{Weights for the outcome classes (in order of the factor levels) in the splitting rule (cost sensitive learning). Classification and probability prediction only. For classification the weights are also applied in the majority vote in terminal nodes.}
 
-\item{splitrule}{Splitting rule. For classification and probability estimation "gini" or "extratrees" with default "gini". For regression "variance", "extratrees" or "maxstat" with default "variance". For survival "logrank", "extratrees", "C" or "maxstat" with default "logrank".}
+\item{splitrule}{Splitting rule. For classification and probability estimation "gini" or "extratrees" with default "gini". For regression "variance", "extratrees" or "maxstat" with default "variance". For survival "logrank", "extratrees", "C" or "maxstat" with default "logrank". NOTE: For diversity forests currently only the default splitting rules are supported.}
 
 \item{num.random.splits}{Artefact from 'ranger'. NOT needed for diversity forests.}
 
-\item{alpha}{For "maxstat" splitrule: Significance threshold to allow splitting.}
+\item{alpha}{For "maxstat" splitrule: Significance threshold to allow splitting. NOT needed for diversity forests.}
 
-\item{minprop}{For "maxstat" splitrule: Lower quantile of covariate distribution to be considered for splitting.}
+\item{minprop}{For "maxstat" splitrule: Lower quantile of covariate distribution to be considered for splitting. NOT needed for diversity forests.}
 
 \item{split.select.weights}{Numeric vector with weights between 0 and 1, representing the probability to select variables for splitting. Alternatively, a list of size num.trees, containing split select weight vectors for each tree can be used.}
 
 \item{always.split.variables}{Currently not useable. Character vector with variable names to be always selected.}
 
-\item{respect.unordered.factors}{Handling of unordered factor covariates. One of 'ignore', 'order' and 'partition'. For the "extratrees" splitrule the default is "partition" for all other splitrules 'ignore'. Alternatively TRUE (='order') or FALSE (='ignore') can be used.}
+\item{respect.unordered.factors}{Handling of unordered factor covariates. One of 'ignore' and 'order' (the option 'partition' possible in 'ranger' is not (yet) possible with diversity forests). Default is 'ignore'. Alternatively TRUE (='order') or FALSE (='ignore') can be used.}
 
 \item{scale.permutation.importance}{Scale permutation importance by standard error as in (Breiman 2001). Only applicable if permutation variable importance mode selected.}
 
@@ -80,9 +80,9 @@ divfor(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
 
 \item{seed}{Random seed. Default is \code{NULL}, which generates the seed from \code{R}. Set to \code{0} to ignore the \code{R} seed.}
 
-\item{dependent.variable.name}{Name of dependent variable, needed if no formula given. For survival forests this is the time variable. NOTE: Currently diversity forests are only possible using the formula interface; thus, \code{dependent.variable.name} must not be specified.}
+\item{dependent.variable.name}{Name of dependent variable, needed if no formula given. For survival forests this is the time variable. NOTE: Currently, diversity forests are only possible using the formula interface; thus, \code{dependent.variable.name} must not be specified.}
 
-\item{status.variable.name}{Name of status variable, only applicable to survival data and needed if no formula given. Use 1 for event and 0 for censoring.}
+\item{status.variable.name}{Name of status variable, only applicable to survival data and needed if no formula given. Use 1 for event and 0 for censoring. NOTE: Currently, diversity forests are only possible using the formula interface; thus, \code{status.variable.name} must not be specified.}
 
 \item{classification}{Only needed if data is a matrix. Set to \code{TRUE} to grow a classification forest.}
 
@@ -115,14 +115,14 @@ Object of class \code{divfor} with elements
 }
 \description{
 Implements diversity forests as presented in Hornung (inprep).
-Currently, only classification is supported, but regression and survival prediction will soon be possible.
+Currently, classification, regression and survival prediction are possible.
 Moreover, the current version of the package only supports univariate, binary splitting, but future
 versions will allow using specific other split procedures. Because 'diversityForest' is a fork of the 
 'ranger' R package (see below for details), the documentation is largely taken from
-'ranger', where large parts of the documentation do not apply to the current version of the 'diversityForest' package.
+'ranger', where large parts of the documentation do not apply to (the current version of) the 'diversityForest' package.
 Moreover, \code{divfor} contains function arguments that are currently not supported, but will be
 in future versions of the package. However, the package is fully functional with respect to applying 
-diversity forest for classification using univariate, binary splitting. See the example section
+diversity forest using univariate, binary splitting. See the example section
 for all basic application scenarios.
 }
 \details{
@@ -131,9 +131,9 @@ efficient C++ implementation. More precisely, 'diversityForest' was written by m
 the code of 'ranger', version 0.11.0. Therefore, details on further functionalities
 of the code that are not presented in the help pages of 'diversityForest' are found
 in the help pages of 'ranger' (version 0.11.0). The code in the example sections of \code{\link{divfor}} and \code{\link{tunedivfor}}
-can be used as a template for all basic application scenarios with respect to classification
+can be used as a template for all basic application scenarios with respect to classification, regression and survival prediction
 using univariate, binary splitting. Some function arguments adopted from the 'ranger' 
-package are not be useable with diversity forests (for the current package version).
+package are not useable with diversity forests (for the current package version).
 }
 \examples{
 library("diversityForest")
@@ -142,9 +142,16 @@ library("diversityForest")
 set.seed(1234)
 
 ## Diversity forest with default settings (NOT recommended)
+# Classification:
 divfor(Species ~ ., data = iris, num.trees = 20)
+# Regression:
+iris2 <- iris; iris2$Species <- NULL; iris2$Y <- rnorm(nrow(iris2))
+divfor(Y ~ ., data = iris2, num.trees = 20)
+# Survival:
+library("survival")
+divfor(Surv(time, status) ~ ., data = veteran, num.trees = 20, respect.unordered.factors = "order")
 # NOTE: num.trees = 20 is specified too small for practical 
-# purposes, because the prediction performance of the resulting 
+# purposes - the prediction performance of the resulting 
 # forest will be suboptimal!!
 # In practice, num.trees = 500 (default value) or a 
 # larger number should be used.
@@ -156,7 +163,7 @@ divfor(Species ~ ., data = iris, nsplits = 10, proptry = 0.4, num.trees = 20)
 ## Applying diversity forest after optimizing the values of nsplits and proptry (recommended)
 tuneres <- tunedivfor(formula = Species ~ ., data = iris, num.trees.pre = 20)
 # NOTE: num.trees.pre = 20 is specified too small for practical 
-# purposes, because the out-of-bag error estimates of the forests 
+# purposes - the out-of-bag error estimates of the forests 
 # constructed during optimization will be much too variable!!
 # In practice, num.trees.pre = 500 (default value) or a 
 # larger number should be used.
@@ -183,10 +190,12 @@ rg.iris$variable.importance
 
 }
 \references{
-Wright, M. N. & Ziegler, A. (2017). "ranger: A fast implementation of random forests for high dimensional data in C++ and R". J Stat Softw 77:1-17, <\doi{10.18637/jss.v077.i01}>.
-Breiman, L. (2001). "Random forests". Mach Learn, 45:5-32, <\doi{10.1023/A:1010933404324}>.
-Malley, J. D., Kruppa, J., Dasgupta, A., Malley, K. G., & Ziegler, A. (2012). "Probability machines: consistent probability estimation using nonparametric learning machines". Methods Inf Med 51:74-81, <\doi{10.3414/ME00-01-0052}>.
-Meinshausen (2006). "Quantile Regression Forests". J Mach Learn Res 7:983-999. \url{http://www.jmlr.org/papers/v7/meinshausen06a.html}.
+\itemize{
+  \item Wright, M. N. & Ziegler, A. (2017). "ranger: A fast implementation of random forests for high dimensional data in C++ and R". J Stat Softw 77:1-17, <\doi{10.18637/jss.v077.i01}>.
+  \item Breiman, L. (2001). "Random forests". Mach Learn, 45:5-32, <\doi{10.1023/A:1010933404324}>.
+  \item Malley, J. D., Kruppa, J., Dasgupta, A., Malley, K. G., & Ziegler, A. (2012). "Probability machines: consistent probability estimation using nonparametric learning machines". Methods Inf Med 51:74-81, <\doi{10.3414/ME00-01-0052}>.
+  \item Meinshausen (2006). "Quantile Regression Forests". J Mach Learn Res 7:983-999. \url{http://www.jmlr.org/papers/v7/meinshausen06a.html}.
+  }
 }
 \seealso{
 \code{\link{predict.divfor}}

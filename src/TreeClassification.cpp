@@ -118,7 +118,7 @@ bool TreeClassification::splitNodeInternal(size_t nodeID, std::vector<size_t>& p
   return false;
 }
 
-// asdf: New function
+// asdf: New function: Split node using univariate, binary splitting:
 bool TreeClassification::splitNodeUnivariateInternal(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) {
 	
   // Stop if maximum node size or depth reached
@@ -145,9 +145,9 @@ bool TreeClassification::splitNodeUnivariateInternal(size_t nodeID, std::vector<
     return true;
   }
 
-  bool stop;
-  stop = findBestSplitUnivariate(nodeID, sampled_varIDs_values);
-
+  // Find best split, stop if no decrease of impurity
+  bool stop = findBestSplitUnivariate(nodeID, sampled_varIDs_values);
+  
   if (stop) {
     split_values[nodeID] = estimate(nodeID);
     return true;
@@ -190,15 +190,6 @@ bool TreeClassification::findBestSplit(size_t nodeID, std::vector<size_t>& possi
     uint sample_classID = (*response_classIDs)[sampleID];
     ++class_counts[sample_classID];
   }
-  	  // Rcpp::Rcout << "start_pos: " << std::endl;
-  // std::copy(begin(start_pos), end(start_pos), std::ostream_iterator<size_t>(std::cout, " "));
-    	  // Rcpp::Rcout << " " << std::endl;
-    	  // Rcpp::Rcout << "end_pos: " << std::endl;
-  // std::copy(begin(end_pos), end(end_pos), std::ostream_iterator<size_t>(std::cout, " "));
-  // Rcpp::Rcout << " " << std::endl;
-  	  // Rcpp::Rcout << "class_counts: " << std::endl;
-  // std::copy(begin(class_counts), end(class_counts), std::ostream_iterator<size_t>(std::cout, " "));
-  // Rcpp::Rcout << " " << std::endl;
   
   // For all possible split variables
   for (auto& varID : possible_split_varIDs) {
@@ -242,7 +233,8 @@ bool TreeClassification::findBestSplit(size_t nodeID, std::vector<size_t>& possi
   return false;
 }
 
-// asdf: New function
+// asdf: New function: Find the best split using univariate,
+// binary splitting:
 bool TreeClassification::findBestSplitUnivariate(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) {
 
   size_t num_samples_node = end_pos[nodeID] - start_pos[nodeID];
@@ -251,6 +243,7 @@ bool TreeClassification::findBestSplitUnivariate(size_t nodeID, std::vector<std:
   size_t best_varID = 0;
   double best_value = 0;
 
+  // Only split if there is at least one sampled covariate/split pair:
   if(sampled_varIDs_values.size() > 0) {
   
   std::vector<size_t> class_counts(num_classes);
@@ -261,43 +254,35 @@ bool TreeClassification::findBestSplitUnivariate(size_t nodeID, std::vector<std:
     ++class_counts[sample_classID];
   }
 
-  // Hier gehts weiter
+  // Cycle through the covariate/split pairs and
+  // determine the best split out of these:
+  /////////////////
   
   size_t varIDtemp; 
   double valuetemp;
   
-      // Count samples until split_value reached
     for (size_t i = 0; i < sampled_varIDs_values.size(); ++i) {
-		
+
+	// Get current covariate ID and split:
   varIDtemp = std::get<0>(sampled_varIDs_values[i]);
   valuetemp = std::get<1>(sampled_varIDs_values[i]);
 
    std::vector<size_t> class_counts_right(num_classes);
    size_t n_right = 0;
   
-    // Count samples in right child per class and possbile split
+    // Count samples in right child per class and possible split
   for (size_t pos = start_pos[nodeID]; pos < end_pos[nodeID]; ++pos) {
     size_t sampleID = sampleIDs[pos];
     double value = data->get(sampleID, varIDtemp);
     uint sample_classID = (*response_classIDs)[sampleID];
 	
-      // Count samples until split_value reached
-    // for (size_t i = 0; i < num_splits; ++i) {
       if (value > valuetemp) {
         ++n_right;
         ++class_counts_right[sample_classID];
-      } // else {
-        // break;
-     //  }
-    // }
+      }
   }
   
-  			// Rcpp::Rcout << "n_rightdavor: " << n_right << std::endl;
-  
-  // Compute decrease of impurity for each possible split
-  // for (size_t i = 0; i < num_splits; ++i) {
-
-    // Stop if one child empty
+    // Number of samples in left child:
     size_t n_left = num_samples_node - n_right;
     //if (n_left == 0 || n_right == 0) {
      // continue;
@@ -314,19 +299,9 @@ bool TreeClassification::findBestSplitUnivariate(size_t nodeID, std::vector<std:
       sum_left += (*class_weights)[j] * class_count_left * class_count_left;
     }
 
-	
     // Decrease of impurity
     double decrease = sum_left / (double) n_left + sum_right / (double) n_right;
 
-		
-	      // Rcpp::Rcout << "varIDtemp: " << varIDtemp << std::endl;
-  // Rcpp::Rcout << "valuetemp: " << valuetemp << std::endl;
-		// Rcpp::Rcout << "sum_left: " << sum_left << std::endl;
-			// Rcpp::Rcout << "n_left: " << n_left << std::endl;
-				// Rcpp::Rcout << "sum_right: " << sum_right << std::endl;
-					// Rcpp::Rcout << "n_right: " << n_right << std::endl;
-	// Rcpp::Rcout << "decrease: " << decrease << std::endl;
-	
     // If better than before, use this
     if (decrease > best_decrease) {
       best_value = valuetemp;
@@ -337,9 +312,6 @@ bool TreeClassification::findBestSplitUnivariate(size_t nodeID, std::vector<std:
   
 	}
 	
-      // Rcpp::Rcout << "best_varID: " << best_varID << std::endl;
-  // Rcpp::Rcout << "best_value: " << best_value << std::endl;
-
   // Stop if no good split found
   if (best_decrease < 0) {
     return true;
@@ -348,9 +320,6 @@ bool TreeClassification::findBestSplitUnivariate(size_t nodeID, std::vector<std:
   // Save best values
   split_varIDs[nodeID] = best_varID;
   split_values[nodeID] = best_value;
-  
-  	// Rcpp::Rcout << "best_varID: " << best_varID << std::endl;
-    // Rcpp::Rcout << "best_value: " << best_value << std::endl;
   
   return false;
  
@@ -375,12 +344,6 @@ void TreeClassification::findBestSplitValueSmallQ(size_t nodeID, size_t varID, s
     std::vector<size_t> class_counts_right(num_splits * num_classes), n_right(num_splits);
     findBestSplitValueSmallQ(nodeID, varID, num_classes, class_counts, num_samples_node, best_value, best_varID,
         best_decrease, possible_split_values, class_counts_right, n_right);
-	  // Rcpp::Rcout << "class_counts_right: " << std::endl;
-  // std::copy(begin(class_counts_right), end(class_counts_right), std::ostream_iterator<size_t>(std::cout, " "));
-  // Rcpp::Rcout << " " << std::endl;
-  	  // Rcpp::Rcout << "n_right: " << std::endl;
-  // std::copy(begin(n_right), end(n_right), std::ostream_iterator<size_t>(std::cout, " "));
-  // Rcpp::Rcout << " " << std::endl;
   } else {
     std::fill_n(counter_per_class.begin(), num_splits * num_classes, 0);
     std::fill_n(counter.begin(), num_splits, 0);

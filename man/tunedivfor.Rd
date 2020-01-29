@@ -44,7 +44,7 @@ set.seed(1234)
 ## Tuning parameter optimization for the iris data set
 tuneres <- tunedivfor(formula = Species ~ ., data = iris, num.trees.pre = 20)
 # NOTE: num.trees.pre = 20 is specified too small for practical 
-# purposes, because the out-of-bag error estimates of the forests 
+# purposes - the out-of-bag error estimates of the forests 
 # constructed during optimization will be much too variable!!
 # In practice, num.trees.pre = 500 (default value) or a 
 # larger number should be used.
@@ -58,7 +58,9 @@ tuneres$ooberrs
 
 }
 \references{
-Wright, M. N. & Ziegler, A. (2017). "ranger: A fast Implementation of Random Forests for High Dimensional Data in C++ and R". J Stat Softw 77:1-17, <\doi{10.18637/jss.v077.i01}>.
+\itemize{
+  \item Wright, M. N. & Ziegler, A. (2017). "ranger: A fast Implementation of Random Forests for High Dimensional Data in C++ and R". J Stat Softw 77:1-17, <\doi{10.18637/jss.v077.i01}>.
+  }
 }
 \seealso{
 \code{\link{divfor}}

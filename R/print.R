@@ -21,7 +21,15 @@
 #
 # -------------------------------------------------------------------------------
 
-# Author: Marvin N. Wright, Roman Hornung
+##' Print contents of divfor object.
+##'
+##'
+##' @title Print divfor
+##' @param x Object of class 'divfor'.
+##' @param ... Further arguments passed to or from other methods.
+##' @seealso \code{\link{divfor}}
+##' @author Marvin N. Wright, Roman Hornung
+##' @export
 print.divfor <- function(x, ...) {
   cat("divfor result\n\n")
   cat("Call:\n", deparse(x$call), "\n\n")
@@ -53,7 +61,14 @@ print.divfor <- function(x, ...) {
   }
 }
 
-# Author: Marvin N. Wright
+##' Print contents of divfor forest object.
+##'
+##'
+##' @title Print divfor forest
+##' @param x Object of class 'divfor.forest'.
+##' @param ... further arguments passed to or from other methods.
+##' @author Marvin N. Wright
+##' @export
 print.divfor.forest <- function(x, ...) {
   cat("divfor forest object\n\n")
   cat("Type:                         ", x$treetype, "\n")
@@ -63,7 +78,14 @@ print.divfor.forest <- function(x, ...) {
   }
 }
 
-# Author: Marvin N. Wright
+##' Print contents of divfor prediction object.
+##'
+##'
+##' @title Print divfor prediction
+##' @param x Object of class 'divfor.prediction'.
+##' @param ... further arguments passed to or from other methods.
+##' @author Marvin N. Wright
+##' @export
 print.divfor.prediction <- function(x, ...) {
   cat("divfor prediction\n\n")
   cat("Type:                            ", x$treetype, "\n")
@@ -84,7 +106,15 @@ str.divfor <- function(object, max.level = 2, ...) {
   str(object, max.level = max.level, ...)
 }
 
-# Author: Roman Hornung
+##' Print contents of tunedivfor object.
+##'
+##'
+##' @title Print tunedivfor
+##' @param x Object of class 'tunedivfor'.
+##' @param ... further arguments passed to or from other methods.
+##' @seealso \code{\link{tunedivfor}}
+##' @author Roman Hornung
+##' @export
 print.tunedivfor <- function(x, ...) {
   cat("tunedivfor result\n\n")
   cat("Optimized nsplits: ", x$nsplitsopt, "\n")

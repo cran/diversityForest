@@ -24,6 +24,8 @@ namespace diversityForest {
 void ForestSurvival::loadForest(size_t dependent_varID, size_t num_trees,
     std::vector<std::vector<std::vector<size_t>> >& forest_child_nodeIDs,
     std::vector<std::vector<size_t>>& forest_split_varIDs, std::vector<std::vector<double>>& forest_split_values,
+	std::vector<std::vector<size_t>>& forest_split_types, std::vector<std::vector<std::vector<size_t>>>& forest_split_multvarIDs, 
+	std::vector<std::vector<std::vector<std::vector<bool>>>>& forest_split_directs, std::vector<std::vector<std::vector<std::vector<double>>>>& forest_split_multvalues,
     size_t status_varID, std::vector<std::vector<std::vector<double>> >& forest_chf,
     std::vector<double>& unique_timepoints, std::vector<bool>& is_ordered_variable) {
 
@@ -37,7 +39,8 @@ void ForestSurvival::loadForest(size_t dependent_varID, size_t num_trees,
   trees.reserve(num_trees);
   for (size_t i = 0; i < num_trees; ++i) {
     trees.push_back(
-        make_unique<TreeSurvival>(forest_child_nodeIDs[i], forest_split_varIDs[i], forest_split_values[i],
+        make_unique<TreeSurvival>(forest_child_nodeIDs[i], forest_split_varIDs[i], forest_split_values[i], forest_split_types[i], forest_split_multvarIDs[i], 
+	    forest_split_directs[i], forest_split_multvalues[i],
             forest_chf[i], &this->unique_timepoints, &response_timepointIDs));
   }
 
@@ -63,6 +66,12 @@ void ForestSurvival::initInternal(std::string status_variable_name) {
   }
 
   data->addNoSplitVariable(status_varID);
+
+  // If npairs not set, use floored square root of number of independent variables.
+  if (npairs == 0) {
+    unsigned long temp = (size_t)ceil(sqrt((double) (num_variables - 1)) / 2);
+    npairs = std::min((unsigned long) 10, temp);
+  }
 
   // If mtry not set, use floored square root of number of independent variables.
   if (mtry == 0) {
@@ -166,8 +175,10 @@ void ForestSurvival::computePredictionErrorInternal() {
   for (size_t tree_idx = 0; tree_idx < num_trees; ++tree_idx) {
     for (size_t sample_idx = 0; sample_idx < trees[tree_idx]->getNumSamplesOob(); ++sample_idx) {
       size_t sampleID = trees[tree_idx]->getOobSampleIDs()[sample_idx];
-      std::vector<double> tree_sample_chf = getTreePrediction(tree_idx, sample_idx);
+      std::vector<double> tree_sample_chf;
 
+        tree_sample_chf = getTreePrediction(tree_idx, sample_idx);
+	  
       for (size_t time_idx = 0; time_idx < tree_sample_chf.size(); ++time_idx) {
         predictions[0][sampleID][time_idx] += tree_sample_chf[time_idx];
       }
@@ -313,6 +324,11 @@ void ForestSurvival::loadFromFileInternal(std::ifstream& infile) {
     readVector1D(split_varIDs, infile);
     std::vector<double> split_values;
     readVector1D(split_values, infile);
+	
+	std::vector<size_t> split_types;
+    std::vector<std::vector<size_t>> split_multvarIDs;
+    std::vector<std::vector<std::vector<bool>>> split_directs;
+    std::vector<std::vector<std::vector<double>>> split_multvalues;
 
     // Read chf
     std::vector<size_t> terminal_nodes;
@@ -348,7 +364,7 @@ void ForestSurvival::loadFromFileInternal(std::ifstream& infile) {
 
     // Create tree
     trees.push_back(
-        make_unique<TreeSurvival>(child_nodeIDs, split_varIDs, split_values, chf, &unique_timepoints,
+        make_unique<TreeSurvival>(child_nodeIDs, split_varIDs, split_values, split_types, split_multvarIDs, split_directs, split_multvalues, chf, &unique_timepoints,
             &response_timepointIDs));
   }
 }

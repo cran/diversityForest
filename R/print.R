@@ -21,15 +21,9 @@
 #
 # -------------------------------------------------------------------------------
 
-##' Print contents of divfor object.
-##'
-##'
-##' @title Print divfor
-##' @param x Object of class 'divfor'.
-##' @param ... Further arguments passed to or from other methods.
-##' @seealso \code{\link{divfor}}
-##' @author Marvin N. Wright, Roman Hornung
-##' @export
+# Print contents of \code{divfor} object.
+#' @author Roman Hornung, Marvin N. Wright
+#' @export
 print.divfor <- function(x, ...) {
   cat("divfor result\n\n")
   cat("Call:\n", deparse(x$call), "\n\n")
@@ -61,14 +55,42 @@ print.divfor <- function(x, ...) {
   }
 }
 
-##' Print contents of divfor forest object.
-##'
-##'
-##' @title Print divfor forest
-##' @param x Object of class 'divfor.forest'.
-##' @param ... further arguments passed to or from other methods.
-##' @author Marvin N. Wright
-##' @export
+# Print contents of \code{interactionfor} object.
+#' @author Roman Hornung, Marvin N. Wright
+#' @export
+print.interactionfor <- function(x, ...) {
+  cat("interactionfor result\n\n")
+  cat("Call:\n", deparse(x$call), "\n\n")
+  cat("Type:                            ", x$treetype, "\n")
+  cat("Number of trees:                 ", x$num.trees, "\n")
+  cat("Sample size:                     ", x$num.samples, "\n")
+  cat("Number of independent variables: ", x$num.independent.variables, "\n")
+  cat("Npairs:                          ", x$npairs, "\n")
+  cat("Target node size:                ", x$min.node.size, "\n")
+  cat("Effect importance mode:          ", x$importance.mode, "\n")
+  cat("Splitrule:                       ", x$splitrule, "\n")
+  if (x$treetype == "Survival") {
+    cat("Number of unique death times:    ", length(x$unique.death.times), "\n")
+  }
+  if (x$treetype == "Classification") {
+    cat("OOB prediction error:            ", sprintf("%1.2f %%", 100*x$prediction.error), "\n")
+  } else if (x$treetype == "Regression") {
+    cat("OOB prediction error (MSE):      ", x$prediction.error, "\n")
+  } else if (x$treetype == "Survival") {
+    cat("OOB prediction error (1-C):      ", x$prediction.error, "\n")
+  } else if (x$treetype == "Probability estimation") {
+    cat("OOB prediction error (Brier s.): ", x$prediction.error, "\n")
+  } else {
+    cat("OOB prediction error:            ", x$prediction.error, "\n")
+  }
+  if (x$treetype == "Regression") {
+    cat("R squared (OOB):                 ", x$r.squared, "\n")
+  }
+}
+
+# Print contents of \code{divfor.forest} object.
+#' @author Marvin N. Wright
+#' @export
 print.divfor.forest <- function(x, ...) {
   cat("divfor forest object\n\n")
   cat("Type:                         ", x$treetype, "\n")
@@ -78,16 +100,36 @@ print.divfor.forest <- function(x, ...) {
   }
 }
 
-##' Print contents of divfor prediction object.
-##'
-##'
-##' @title Print divfor prediction
-##' @param x Object of class 'divfor.prediction'.
-##' @param ... further arguments passed to or from other methods.
-##' @author Marvin N. Wright
-##' @export
+# Print contents of \code{interactionfor.forest} object.
+#' @author Marvin N. Wright
+#' @export
+print.interactionfor.forest <- function(x, ...) {
+  cat("interactionfor forest object\n\n")
+  cat("Type:                         ", x$treetype, "\n")
+  cat("Number of trees:              ", x$num.trees, "\n")
+  if (x$treetype == "Survival") {
+    cat("Number of unique death times: ", length(x$unique.death.times), "\n")
+  }
+}
+
+# Print contents of \code{divfor.prediction} object.
+#' @author Marvin N. Wright
+#' @export
 print.divfor.prediction <- function(x, ...) {
   cat("divfor prediction\n\n")
+  cat("Type:                            ", x$treetype, "\n")
+  cat("Sample size:                     ", x$num.samples, "\n")
+  cat("Number of independent variables: ", x$num.independent.variables, "\n")
+  if (x$treetype == "Survival") {
+    cat("Number of unique death times:    ", length(x$unique.death.times), "\n")
+  }
+}
+
+# Print contents of \code{divfor.prediction} object.
+#' @author Marvin N. Wright
+#' @export
+print.interactionfor.prediction <- function(x, ...) {
+  cat("interactionfor prediction\n\n")
   cat("Type:                            ", x$treetype, "\n")
   cat("Sample size:                     ", x$num.samples, "\n")
   cat("Number of independent variables: ", x$num.independent.variables, "\n")
@@ -106,15 +148,9 @@ str.divfor <- function(object, max.level = 2, ...) {
   str(object, max.level = max.level, ...)
 }
 
-##' Print contents of tunedivfor object.
-##'
-##'
-##' @title Print tunedivfor
-##' @param x Object of class 'tunedivfor'.
-##' @param ... further arguments passed to or from other methods.
-##' @seealso \code{\link{tunedivfor}}
-##' @author Roman Hornung
-##' @export
+# Print contents of \code{print.tunedivfor}  object.
+#' @author Roman Hornung
+#' @export
 print.tunedivfor <- function(x, ...) {
   cat("tunedivfor result\n\n")
   cat("Optimized nsplits: ", x$nsplitsopt, "\n")

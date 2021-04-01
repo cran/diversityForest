@@ -41,12 +41,19 @@
 ##'   \item{\code{tunegrid}}{Two-dimensional \code{data.frame}, where each row contains one pair of values considered for \code{nsplits} (first entry) and \code{proptry} (second entry).}
 ##'   \item{\code{ooberrs}}{The out-of-bag prediction errors obtained for each pair of values considered for \code{nsplits} and \code{proptry}, where the ordering of pairs of values is the same as in \code{tunegrid} (see above).}
 ##' @examples
+##' 
+##' ## Load package:
+##' 
 ##' library("diversityForest")
 ##' 
+##' 
 ##' ## Set seed to obtain reproducible results:
+##' 
 ##' set.seed(1234)
 ##'
-##' ## Tuning parameter optimization for the iris data set
+##'
+##' ## Tuning parameter optimization for the iris data set:
+##' 
 ##' tuneres <- tunedivfor(formula = Species ~ ., data = iris, num.trees.pre = 20)
 ##' # NOTE: num.trees.pre = 20 is specified too small for practical 
 ##' # purposes - the out-of-bag error estimates of the forests 
@@ -64,6 +71,7 @@
 ##' @author Roman Hornung
 ##' @references
 ##' \itemize{
+##'   \item Hornung R. (2020) Diversity Forests: Using split sampling to allow for complex split procedures in random forest. Technical Report No. 234, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/73377/index.html}.
 ##'   \item Wright, M. N. & Ziegler, A. (2017). "ranger: A fast Implementation of Random Forests for High Dimensional Data in C++ and R". J Stat Softw 77:1-17, <\doi{10.18637/jss.v077.i01}>.
 ##'   }
 ##' @seealso \code{\link{divfor}}

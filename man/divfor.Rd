@@ -3,21 +3,45 @@
 \encoding{UTF-8}
 \name{divfor}
 \alias{divfor}
-\title{Construct a Diversity Forest prediction rule}
+\title{Construct a basic diversity forest prediction rule that uses univariable, binary splitting.}
 \usage{
-divfor(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
-  importance = "none", write.forest = TRUE, probability = FALSE,
-  min.node.size = NULL, max.depth = NULL, replace = TRUE,
-  sample.fraction = ifelse(replace, 1, 0.632), case.weights = NULL,
-  class.weights = NULL, splitrule = NULL, num.random.splits = 1,
-  alpha = 0.5, minprop = 0.1, split.select.weights = NULL,
-  always.split.variables = NULL, respect.unordered.factors = NULL,
-  scale.permutation.importance = FALSE, keep.inbag = FALSE,
-  inbag = NULL, holdout = FALSE, quantreg = FALSE,
-  oob.error = TRUE, num.threads = NULL, save.memory = FALSE,
-  verbose = TRUE, seed = NULL, dependent.variable.name = NULL,
-  status.variable.name = NULL, classification = NULL, nsplits = 30,
-  proptry = 1)
+divfor(
+  formula = NULL,
+  data = NULL,
+  num.trees = 500,
+  mtry = NULL,
+  importance = "none",
+  write.forest = TRUE,
+  probability = FALSE,
+  min.node.size = NULL,
+  max.depth = NULL,
+  replace = TRUE,
+  sample.fraction = ifelse(replace, 1, 0.632),
+  case.weights = NULL,
+  class.weights = NULL,
+  splitrule = NULL,
+  num.random.splits = 1,
+  alpha = 0.5,
+  minprop = 0.1,
+  split.select.weights = NULL,
+  always.split.variables = NULL,
+  respect.unordered.factors = NULL,
+  scale.permutation.importance = FALSE,
+  keep.inbag = FALSE,
+  inbag = NULL,
+  holdout = FALSE,
+  quantreg = FALSE,
+  oob.error = TRUE,
+  num.threads = NULL,
+  save.memory = FALSE,
+  verbose = TRUE,
+  seed = NULL,
+  dependent.variable.name = NULL,
+  status.variable.name = NULL,
+  classification = NULL,
+  nsplits = 30,
+  proptry = 1
+)
 }
 \arguments{
 \item{formula}{Object of class \code{formula} or \code{character} describing the model to fit. Interaction terms supported only for numerical variables.}
@@ -32,9 +56,9 @@ divfor(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
 
 \item{write.forest}{Save \code{divfor.forest} object, required for prediction. Set to \code{FALSE} to reduce memory usage if no prediction intended.}
 
-\item{probability}{Grow a probability forest as in Malley et al. (2012).}
+\item{probability}{Grow a probability forest as in Malley et al. (2012). NOTE: Not yet implemented for diversity forests!}
 
-\item{min.node.size}{Minimal node size. Default 1 for classification.}
+\item{min.node.size}{Minimal node size. Default 1 for classification, 5 for regression, 3 for survival, and 5 for probability.}
 
 \item{max.depth}{Maximal tree depth. A value of NULL or 0 (the default) corresponds to unlimited depth, 1 to tree stumps (1 split per tree).}
 
@@ -80,15 +104,15 @@ divfor(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
 
 \item{seed}{Random seed. Default is \code{NULL}, which generates the seed from \code{R}. Set to \code{0} to ignore the \code{R} seed.}
 
-\item{dependent.variable.name}{Name of dependent variable, needed if no formula given. For survival forests this is the time variable. NOTE: Currently, diversity forests are only possible using the formula interface; thus, \code{dependent.variable.name} must not be specified.}
+\item{dependent.variable.name}{Name of outcome variable, needed if no formula given. For survival forests this is the time variable.}
 
-\item{status.variable.name}{Name of status variable, only applicable to survival data and needed if no formula given. Use 1 for event and 0 for censoring. NOTE: Currently, diversity forests are only possible using the formula interface; thus, \code{status.variable.name} must not be specified.}
+\item{status.variable.name}{Name of status variable, only applicable to survival data and needed if no formula given. Use 1 for event and 0 for censoring.}
 
 \item{classification}{Only needed if data is a matrix. Set to \code{TRUE} to grow a classification forest.}
 
 \item{nsplits}{Number of candidate splits to sample for each split. Default is 30.}
 
-\item{proptry}{parameter that restricts the number of candidate splits considered for small nodes. If \code{nsplits} is larger than \code{proptry} times the number of all possible splits, the number of candidate splits to draw is reduced to the largest integer smaller than \code{proptry} times the number of all possible splits. Default is 1, which corresponds to always using \code{nsplits} candidate splits.}
+\item{proptry}{Parameter that restricts the number of candidate splits considered for small nodes. If \code{nsplits} is larger than \code{proptry} times the number of all possible splits, the number of candidate splits to draw is reduced to the largest integer smaller than \code{proptry} times the number of all possible splits. Default is 1, which corresponds to always using \code{nsplits} candidate splits.}
 }
 \value{
 Object of class \code{divfor} with elements
@@ -114,28 +138,13 @@ Object of class \code{divfor} with elements
   \item{\code{proptry}}{Value of \code{proptry} used.}
 }
 \description{
-Implements diversity forests as presented in Hornung (inprep).
-Currently, classification, regression and survival prediction are possible.
-Moreover, the current version of the package only supports univariate, binary splitting, but future
-versions will allow using specific other split procedures. Because 'diversityForest' is a fork of the 
-'ranger' R package (see below for details), the documentation is largely taken from
-'ranger', where large parts of the documentation do not apply to (the current version of) the 'diversityForest' package.
-Moreover, \code{divfor} contains function arguments that are currently not supported, but will be
-in future versions of the package. However, the package is fully functional with respect to applying 
-diversity forest using univariate, binary splitting. See the example section
-for all basic application scenarios.
-}
-\details{
-As noted above, 'diversityForest' is a fork of the R package 'ranger' that implements random forests using an
-efficient C++ implementation. More precisely, 'diversityForest' was written by modifying
-the code of 'ranger', version 0.11.0. Therefore, details on further functionalities
-of the code that are not presented in the help pages of 'diversityForest' are found
-in the help pages of 'ranger' (version 0.11.0). The code in the example sections of \code{\link{divfor}} and \code{\link{tunedivfor}}
-can be used as a template for all basic application scenarios with respect to classification, regression and survival prediction
-using univariate, binary splitting. Some function arguments adopted from the 'ranger' 
-package are not useable with diversity forests (for the current package version).
+Implements the most basic form of diversity forests that uses univariable, binary splitting.
+Currently, categorical, metric, and survival outcomes are supported.
 }
 \examples{
+\dontrun{
+
+## Load package:
 library("diversityForest")
 
 ## Set seed to obtain reproducible results:
@@ -187,14 +196,16 @@ table(iris.test$Species, pred.iris$predictions)
 rg.iris <- divfor(Species ~ ., data = iris, importance = "permutation", num.trees = 20)
 # NOTE again: num.trees = 20 is specified too small for practical purposes.
 rg.iris$variable.importance
+}
 
 }
 \references{
 \itemize{
+  \item Hornung R. (2020) Diversity Forests: Using split sampling to allow for complex split procedures in random forest. Technical Report No. 234, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/73377/index.html}.
   \item Wright, M. N. & Ziegler, A. (2017). "ranger: A fast implementation of random forests for high dimensional data in C++ and R". J Stat Softw 77:1-17, <\doi{10.18637/jss.v077.i01}>.
   \item Breiman, L. (2001). "Random forests". Mach Learn, 45:5-32, <\doi{10.1023/A:1010933404324}>.
   \item Malley, J. D., Kruppa, J., Dasgupta, A., Malley, K. G., & Ziegler, A. (2012). "Probability machines: consistent probability estimation using nonparametric learning machines". Methods Inf Med 51:74-81, <\doi{10.3414/ME00-01-0052}>.
-  \item Meinshausen (2006). "Quantile Regression Forests". J Mach Learn Res 7:983-999. \url{http://www.jmlr.org/papers/v7/meinshausen06a.html}.
+  \item Meinshausen (2006). "Quantile Regression Forests". J Mach Learn Res 7:983-999.
   }
 }
 \seealso{

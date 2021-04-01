@@ -45,7 +45,8 @@ public:
   bool loadFromFileOther(std::ifstream& input_file, std::string header_line, char seperator);
 
   void getAllValues(std::vector<double>& all_values, std::vector<size_t>& sampleIDs, size_t varID, size_t start, size_t end) const;
-
+  void getRawValues(std::vector<double>& all_values, std::vector<size_t>& sampleIDs, size_t varID, size_t start, size_t end) const;
+  
   void getMinMaxValues(double& min, double&max, std::vector<size_t>& sampleIDs, size_t varID, size_t start, size_t end) const;
 
   size_t getIndex(size_t row, size_t col) const {

@@ -46,7 +46,7 @@ public:
       std::string split_select_weights_file, const std::vector<std::string>& always_split_variable_names,
       std::string status_variable_name, bool sample_with_replacement,
       const std::vector<std::string>& unordered_variable_names, bool memory_saving_splitting, SplitRule splitrule,
-      std::string case_weights_file, bool predict_all, double sample_fraction, uint max_triedsplits, double proptry, double alpha, double minprop,
+      std::string case_weights_file, bool predict_all, double sample_fraction, uint nsplits, uint npairs, double proptry, double alpha, double minprop,
       bool holdout, PredictionType prediction_type, uint num_random_splits, uint max_depth); // asdf
   void initR(std::string dependent_variable_name, std::unique_ptr<Data> input_data, uint mtry, uint num_trees,
       std::ostream* verbose_out, uint seed, uint num_threads, ImportanceMode importance_mode, uint min_node_size,
@@ -55,14 +55,14 @@ public:
       bool prediction_mode, bool sample_with_replacement, const std::vector<std::string>& unordered_variable_names,
       bool memory_saving_splitting, SplitRule splitrule, std::vector<double>& case_weights,
       std::vector<std::vector<size_t>>& manual_inbag, bool predict_all, bool keep_inbag,
-      std::vector<double>& sample_fraction, uint max_triedsplits, double proptry, double alpha, double minprop, bool holdout, PredictionType prediction_type,
-      uint num_random_splits, bool order_snps, uint max_depth); // asdf
+      std::vector<double>& sample_fraction, uint nsplits, uint npairs, double proptry, double alpha, double minprop, bool holdout, PredictionType prediction_type,
+      uint num_random_splits, bool order_snps, uint max_depth, std::vector<std::vector<size_t>>& promispairs, uint& eim_mode, uint& divfortype); // asdf
   void init(std::string dependent_variable_name, MemoryMode memory_mode, std::unique_ptr<Data> input_data, uint mtry,
       std::string output_prefix, uint num_trees, uint seed, uint num_threads, ImportanceMode importance_mode,
       uint min_node_size, std::string status_variable_name, bool prediction_mode, bool sample_with_replacement,
       const std::vector<std::string>& unordered_variable_names, bool memory_saving_splitting, SplitRule splitrule,
-      bool predict_all, std::vector<double>& sample_fraction, uint max_triedsplits, double proptry, double alpha, double minprop, bool holdout,
-      PredictionType prediction_type, uint num_random_splits, bool order_snps, uint max_depth); // asdf
+      bool predict_all, std::vector<double>& sample_fraction, uint nsplits, uint npairs, double proptry, double alpha, double minprop, bool holdout,
+      PredictionType prediction_type, uint num_random_splits, bool order_snps, uint max_depth, std::vector<std::vector<size_t>>& promispairs, uint eim_mode, uint divfortype); // asdf
   virtual void initInternal(std::string status_variable_name) = 0;
 
   // Grow or predict
@@ -100,8 +100,57 @@ public:
     }
     return result;
   }
+  std::vector<std::vector<size_t>> getSplitTypes() {
+    std::vector<std::vector<size_t>> result;
+    for (auto& tree : trees) {
+      result.push_back(tree->getSplitTypes());
+    }
+    return result;
+  }
+  std::vector<std::vector<std::vector<size_t>>> getSplitMultVarIDs() {
+    std::vector<std::vector<std::vector<size_t>>> result;
+    for (auto& tree : trees) {
+      result.push_back(tree->getSplitMultVarIDs());
+    }
+    return result;
+  }
+  std::vector<std::vector<std::vector<std::vector<bool>>>> getSplitDirects() {
+    std::vector<std::vector<std::vector<std::vector<bool>>>> result;
+    for (auto& tree : trees) {
+      result.push_back(tree->getSplitDirects());
+    }
+    return result;
+  }
+  std::vector<std::vector<std::vector<std::vector<double>>>> getSplitMultValues() {
+    std::vector<std::vector<std::vector<std::vector<double>>>> result;
+    for (auto& tree : trees) {
+      result.push_back(tree->getSplitMultValues());
+    }
+    return result;
+  }
   const std::vector<double>& getVariableImportance() const {
     return variable_importance;
+  }
+  const std::vector<double>& getVariableImportanceMultivariateUniv() const {
+    return eim_univ;
+  }
+  const std::vector<double>& getVariableImportanceMultivariateBivPooled() const {
+    return eim_bivpooled;
+  }
+  const std::vector<double>& getVariableImportanceMultivariatebivqual() const {
+    return eim_bivqual;
+  }
+  const std::vector<double>& getVariableImportanceMultivariatebivquantLL() const {
+    return eim_bivquant_ll;
+  }
+  const std::vector<double>& getVariableImportanceMultivariatebivquantLH() const {
+    return eim_bivquant_lh;
+  }
+  const std::vector<double>& getVariableImportanceMultivariatebivquantHL() const {
+    return eim_bivquant_hl;
+  }
+  const std::vector<double>& getVariableImportanceMultivariatebivquantHH() const {
+    return eim_bivquant_hh;
   }
   double getOverallPredictionError() const {
     return overall_prediction_error;
@@ -118,8 +167,11 @@ public:
   uint getMtry() const {
     return mtry;
   }
-    uint getMaxNtriedSplits() const { // asdf
-    return max_triedsplits;  // asdf
+  uint getNsplits() const { // asdf
+    return nsplits;  // asdf
+  } // asdf
+  uint getNpairs() const { // asdf
+    return npairs;  // asdf
   } // asdf
       double getProptry() const { // asdf
     return proptry;  // asdf
@@ -160,6 +212,7 @@ protected:
   virtual void computePredictionErrorInternal() = 0;
 
   void computePermutationImportance();
+  void computePermutationImportanceMultivariate();
 
   // Multithreading methods for growing/prediction/importance, called by each thread
   void growTreesInThread(uint thread_idx, std::vector<double>* variable_importance);
@@ -167,6 +220,10 @@ protected:
   void predictInternalInThread(uint thread_idx);
   void computeTreePermutationImportanceInThread(uint thread_idx, std::vector<double>& importance,
       std::vector<double>& variance);
+  void computeTreePermutationImportanceMultivariateInThread(uint thread_idx, std::vector<double>& importanceuniv,
+     std::vector<double>& importancebivpooled, std::vector<double>& importancebivqual, 
+	 std::vector<double>& importancebivquant_ll, std::vector<double>& importancebivquant_lh, std::vector<double>& importancebivquant_hl,
+	 std::vector<double>& importancebivquant_hh);
 
   // Load forest from file
   void loadFromFile(std::string filename);
@@ -206,8 +263,12 @@ protected:
   PredictionType prediction_type;
   uint num_random_splits;
   uint max_depth;
-  uint max_triedsplits; // asdf
+  uint nsplits; // asdf
+  uint npairs;
   double proptry; // asdf
+  std::vector<std::vector<size_t>> promispairs;
+  uint eim_mode;
+  uint divfortype;
   
   // MAXSTAT splitrule
   double alpha;
@@ -247,7 +308,16 @@ protected:
 
   // Variable importance for all variables in forest
   std::vector<double> variable_importance;
-
+  
+  // Effect importance:
+  std::vector<double> eim_univ;
+  std::vector<double> eim_bivpooled;
+  std::vector<double> eim_bivqual;
+  std::vector<double> eim_bivquant_ll;
+  std::vector<double> eim_bivquant_lh;
+  std::vector<double> eim_bivquant_hl;
+  std::vector<double> eim_bivquant_hh;
+  
   // Computation progress (finished trees)
   size_t progress;
 #ifdef R_BUILD

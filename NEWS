@@ -2,3 +2,8 @@
 ##### Version 0.2.0
 * Add regression and survival prediction (only classification previously)
 * Bug fixes
+
+##### Version 0.3.0
+* Interaction forests added for categorical, continuous, and survival outcomes
+* Plot functions for visualising interaction effects as the estimated bivariable influence of covariate pairs
+

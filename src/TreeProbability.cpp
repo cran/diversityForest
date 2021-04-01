@@ -9,6 +9,8 @@
  R package "diversityForest" under GPL3 license.
  #-------------------------------------------------------------------------------*/
 
+#include <Rcpp.h>
+
 #include "TreeProbability.h"
 #include "utility.h"
 #include "Data.h"
@@ -22,9 +24,11 @@ TreeProbability::TreeProbability(std::vector<double>* class_values, std::vector<
 }
 
 TreeProbability::TreeProbability(std::vector<std::vector<size_t>>& child_nodeIDs, std::vector<size_t>& split_varIDs,
-    std::vector<double>& split_values, std::vector<double>* class_values, std::vector<uint>* response_classIDs,
+    std::vector<double>& split_values, std::vector<size_t>& split_types, 
+	std::vector<std::vector<size_t>>& split_multvarIDs, std::vector<std::vector<std::vector<bool>>>& split_directs, 
+	std::vector<std::vector<std::vector<double>>>& split_multvalues, std::vector<double>* class_values, std::vector<uint>* response_classIDs,
     std::vector<std::vector<double>>& terminal_class_counts) :
-    Tree(child_nodeIDs, split_varIDs, split_values), class_values(class_values), response_classIDs(response_classIDs), sampleIDs_per_class(
+    Tree(child_nodeIDs, split_varIDs, split_values, split_types, split_multvarIDs, split_directs, split_multvalues), class_values(class_values), response_classIDs(response_classIDs), sampleIDs_per_class(
         0), terminal_class_counts(terminal_class_counts), class_weights(0), counter(0), counter_per_class(0) {
 }
 
@@ -126,6 +130,51 @@ bool TreeProbability::splitNodeUnivariateInternal(size_t nodeID, std::vector<std
   return false;
 }
 
+// asdf: New function: Split node using univariate, binary splitting:
+bool TreeProbability::splitNodeMultivariateInternal(size_t nodeID, std::vector<size_t> sampled_split_types, std::vector<std::vector<size_t>> sampled_split_multvarIDs, std::vector<std::vector<std::vector<bool>>> sampled_split_directs, std::vector<std::vector<std::vector<double>>> sampled_split_multvalues) {
+
+	// Stop, if no suitable split was found:
+	if (sampled_split_types.size() == 0)
+    {
+	  addToTerminalNodes(nodeID);
+    return true;
+    }
+	
+  // Stop if maximum node size or depth reached
+  size_t num_samples_node = end_pos[nodeID] - start_pos[nodeID];
+  if (num_samples_node <= min_node_size || (nodeID >= last_left_nodeID && max_depth > 0 && depth >= max_depth)) {
+    addToTerminalNodes(nodeID);
+    return true;
+  }
+
+  // Check if node is pure and set split_value to estimate and stop if pure
+  bool pure = true;
+  double pure_value = 0;
+  for (size_t pos = start_pos[nodeID]; pos < end_pos[nodeID]; ++pos) {
+    size_t sampleID = sampleIDs[pos];
+    double value = data->get(sampleID, dependent_varID);
+    if (pos != start_pos[nodeID] && value != pure_value) {
+      pure = false;
+      break;
+    }
+    pure_value = value;
+  }
+  if (pure) {
+    addToTerminalNodes(nodeID);
+    return true;
+  }
+
+  // Find best split, stop if no decrease of impurity
+  bool stop = findBestSplitMultivariate(nodeID, sampled_split_types, sampled_split_multvarIDs, sampled_split_directs, sampled_split_multvalues);
+
+  if (stop) {
+    addToTerminalNodes(nodeID);
+    return true;
+  }
+
+  return false;
+}
+
 void TreeProbability::createEmptyNodeInternal() {
   terminal_class_counts.push_back(std::vector<double>());
 }
@@ -206,6 +255,122 @@ bool TreeProbability::findBestSplit(size_t nodeID, std::vector<size_t>& possible
 bool TreeProbability::findBestSplitUnivariate(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) {
   // Auffuellen
   return false;
+}
+
+bool TreeProbability::findBestSplitMultivariate(size_t nodeID, std::vector<size_t> sampled_split_types, std::vector<std::vector<size_t>> sampled_split_multvarIDs, std::vector<std::vector<std::vector<bool>>> sampled_split_directs, std::vector<std::vector<std::vector<double>>> sampled_split_multvalues) {
+	
+  size_t num_samples_node = end_pos[nodeID] - start_pos[nodeID];
+  size_t num_classes = class_values->size();
+  double best_decrease = -1;
+  size_t best_split_type;
+  std::vector<size_t> best_split_multvarID;
+  std::vector<std::vector<bool>> best_split_direct;
+  std::vector<std::vector<double>> best_split_multvalue;
+
+
+  std::vector<size_t> class_counts(num_classes);
+  // Compute overall class counts
+  for (size_t pos = start_pos[nodeID]; pos < end_pos[nodeID]; ++pos) {
+    size_t sampleID = sampleIDs[pos];
+    uint sample_classID = (*response_classIDs)[sampleID];
+    ++class_counts[sample_classID];
+  }
+
+
+  // Cycle through the splits and determine the best split
+  // out of these:
+  
+    for (size_t i = 0; i < sampled_split_types.size(); ++i) {
+
+   std::vector<size_t> class_counts_right(num_classes);
+   size_t n_right = 0;
+  
+    // Count samples in right child per class and possible split
+  for (size_t pos = start_pos[nodeID]; pos < end_pos[nodeID]; ++pos) {
+    size_t sampleID = sampleIDs[pos];
+    uint sample_classID = (*response_classIDs)[sampleID];
+	bool inrectangle = IsInRectangle(data, sampleID, sampled_split_types[i], sampled_split_multvarIDs[i], sampled_split_directs[i], sampled_split_multvalues[i]);
+      if (!inrectangle) {
+        ++n_right;
+        ++class_counts_right[sample_classID];
+      }
+  }
+  
+    // Number of samples in left child:
+    size_t n_left = num_samples_node - n_right;
+    //if (n_left == 0 || n_right == 0) {
+     // continue;
+    //}
+
+    // Sum of squares
+    double sum_left = 0;
+    double sum_right = 0;
+    for (size_t j = 0; j < num_classes; ++j) {
+      size_t class_count_right = class_counts_right[j];
+      size_t class_count_left = class_counts[j] - class_count_right;
+
+      sum_right += (*class_weights)[j] * class_count_right * class_count_right;
+      sum_left += (*class_weights)[j] * class_count_left * class_count_left;
+    }
+
+    // Decrease of impurity
+    double decrease = sum_left / (double) n_left + sum_right / (double) n_right;
+
+    // If better than before, use this
+    if (decrease > best_decrease) {
+
+  size_t nvars = sampled_split_multvarIDs[i].size();
+  best_split_multvarID.resize(nvars);
+  size_t nrects = sampled_split_directs[i].size();
+  best_split_direct.resize(nrects);
+  best_split_multvalue.resize(nrects);
+
+for (size_t j = 0; j < nrects; j++) {
+best_split_direct[j].resize(nvars);
+best_split_multvalue[j].resize(nvars);
+}
+
+      best_split_type = sampled_split_types[i];
+      best_split_multvarID = sampled_split_multvarIDs[i];
+      best_split_direct = sampled_split_directs[i];
+      best_split_multvalue = sampled_split_multvalues[i];
+      best_decrease = decrease;
+    }
+
+	}
+
+  // Stop if no good split found
+  if (best_decrease < 0) {
+    return true;
+  }
+
+  // Save best values samma
+  //// Rcpp::Rcout << "Laenge split_types[nodeID]:  " << split_types.size() << std::endl;
+  //// Rcpp::Rcout << "nodeID:  " << nodeID << std::endl;
+  //// Rcpp::Rcout << "best_split_type:  " << best_split_type << std::endl;
+  
+  split_types[nodeID] = best_split_type;
+  
+  split_multvarIDs[nodeID].resize(best_split_multvarID.size());
+  split_multvarIDs[nodeID] = best_split_multvarID;
+
+
+  size_t sizeouter = best_split_direct.size();
+  
+  split_directs[nodeID].resize(sizeouter);
+  for (size_t i = 0; i < sizeouter; ++i) {
+	split_directs[nodeID][i].resize(best_split_direct[i].size());
+  }
+  split_directs[nodeID] = best_split_direct;
+  
+  split_multvalues[nodeID].resize(sizeouter);
+  for (size_t i = 0; i < sizeouter; ++i) {
+	split_multvalues[nodeID][i].resize(best_split_multvalue[i].size());
+  }
+  split_multvalues[nodeID] = best_split_multvalue;
+  
+  return false;
+ 
 }
 
 void TreeProbability::findBestSplitValueSmallQ(size_t nodeID, size_t varID, size_t num_classes,

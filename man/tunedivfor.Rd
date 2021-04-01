@@ -5,8 +5,13 @@
 \alias{tunedivfor}
 \title{Optimization of the values of the tuning parameters \code{nsplits} and \code{proptry}}
 \usage{
-tunedivfor(formula = NULL, data = NULL, nsplitsgrid = c(2, 5, 10, 30,
-  50, 100, 200), proptrygrid = c(0.05, 1), num.trees.pre = 500)
+tunedivfor(
+  formula = NULL,
+  data = NULL,
+  nsplitsgrid = c(2, 5, 10, 30, 50, 100, 200),
+  proptrygrid = c(0.05, 1),
+  num.trees.pre = 500
+)
 }
 \arguments{
 \item{formula}{Object of class \code{formula} or \code{character} describing the model to fit. Interaction terms supported only for numerical variables.}
@@ -36,12 +41,19 @@ parameter values are associated with the same smallest out-of-bag prediction err
 pair with the smallest (parameter) values is used.
 }
 \examples{
+
+## Load package:
+
 library("diversityForest")
 
+
 ## Set seed to obtain reproducible results:
+
 set.seed(1234)
 
-## Tuning parameter optimization for the iris data set
+
+## Tuning parameter optimization for the iris data set:
+
 tuneres <- tunedivfor(formula = Species ~ ., data = iris, num.trees.pre = 20)
 # NOTE: num.trees.pre = 20 is specified too small for practical 
 # purposes - the out-of-bag error estimates of the forests 
@@ -59,6 +71,7 @@ tuneres$ooberrs
 }
 \references{
 \itemize{
+  \item Hornung R. (2020) Diversity Forests: Using split sampling to allow for complex split procedures in random forest. Technical Report No. 234, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/73377/index.html}.
   \item Wright, M. N. & Ziegler, A. (2017). "ranger: A fast Implementation of Random Forests for High Dimensional Data in C++ and R". J Stat Softw 77:1-17, <\doi{10.18637/jss.v077.i01}>.
   }
 }

@@ -116,6 +116,27 @@ void drawWithoutReplacementSimple(std::vector<size_t>& result, std::mt19937_64& 
   }
 }
 
+void drawDoublesWithoutReplacement(std::vector<double>& result, std::mt19937_64& random_number_generator, 
+  std::vector<double> double_values, size_t num_samples) {
+
+  result.reserve(num_samples);
+
+  // Set all to not selected
+  std::vector<bool> temp;
+  temp.resize(double_values.size(), false);
+
+  std::uniform_int_distribution<size_t> unif_dist(0, double_values.size() - 1);
+  for (size_t i = 0; i < num_samples; ++i) {
+    size_t draw;
+    do {
+      draw = unif_dist(random_number_generator);
+    } while (temp[draw]);
+    temp[draw] = true;
+    result.push_back(double_values[draw]);
+  }
+}
+
+
 void drawWithoutReplacementFisherYates(std::vector<size_t>& result, std::mt19937_64& random_number_generator,
     size_t max, const std::vector<size_t>& skip, size_t num_samples) {
 
@@ -307,6 +328,38 @@ size_t roundToNextMultiple(size_t value, uint multiple) {
   }
 
   return value + multiple - remainder;
+}
+
+// Returns value of Binomial Coefficient C(n, k)  
+size_t binomialCoeff(size_t n, size_t k)  
+{  
+    // Base Cases  
+    if (k == 0 || k == n)  
+        return 1;  
+  
+    // Recur  
+    return binomialCoeff(n - 1, k - 1) +  
+                binomialCoeff(n - 1, k);  
+}  
+
+// Function that compares two nested arrays and returns true, if all elements are equal pairwise
+// and false else
+bool areArraysEqual(std::vector<size_t> first_array, std::vector<size_t> second_array)
+{
+	
+	// Return false, if the dimensions differ
+	if (first_array.size() != second_array.size())
+		return false;
+	
+	// Compare all elements of the arrays pairwise and return false, if any of them differs:
+	for (size_t i = 0; i < first_array.size(); i++) {
+       if (first_array[i] != second_array[i])
+			return false;
+	}
+	
+	// Return true, if all elements are equal
+	return true;
+	
 }
 
 void splitString(std::vector<std::string>& result, const std::string& input, char split_char) { // #nocov start

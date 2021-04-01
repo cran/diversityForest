@@ -26,7 +26,9 @@ namespace diversityForest {
 
 void ForestClassification::loadForest(size_t dependent_varID, size_t num_trees,
     std::vector<std::vector<std::vector<size_t>> >& forest_child_nodeIDs,
-    std::vector<std::vector<size_t>>& forest_split_varIDs, std::vector<std::vector<double>>& forest_split_values,
+    std::vector<std::vector<size_t>>& forest_split_varIDs, std::vector<std::vector<double>>& forest_split_values, 
+	std::vector<std::vector<size_t>>& forest_split_types, std::vector<std::vector<std::vector<size_t>>>& forest_split_multvarIDs, 
+	std::vector<std::vector<std::vector<std::vector<bool>>>>& forest_split_directs, std::vector<std::vector<std::vector<std::vector<double>>>>& forest_split_multvalues,
     std::vector<double>& class_values, std::vector<bool>& is_ordered_variable) {
 
   this->dependent_varID = dependent_varID;
@@ -38,8 +40,8 @@ void ForestClassification::loadForest(size_t dependent_varID, size_t num_trees,
   trees.reserve(num_trees);
   for (size_t i = 0; i < num_trees; ++i) {
     trees.push_back(
-        make_unique<TreeClassification>(forest_child_nodeIDs[i], forest_split_varIDs[i], forest_split_values[i],
-            &this->class_values, &response_classIDs));
+        make_unique<TreeClassification>(forest_child_nodeIDs[i], forest_split_varIDs[i], forest_split_values[i], forest_split_types[i], forest_split_multvarIDs[i], 
+	    forest_split_directs[i], forest_split_multvalues[i], &this->class_values, &response_classIDs));
   }
 
   // Create thread ranges
@@ -47,6 +49,12 @@ void ForestClassification::loadForest(size_t dependent_varID, size_t num_trees,
 }
 
 void ForestClassification::initInternal(std::string status_variable_name) {
+
+  // If npairs not set, use floored square root of number of independent variables.
+  if (npairs == 0) {
+    unsigned long temp = (size_t)ceil(sqrt((double) (num_variables - 1)) / 2);
+    npairs = std::min((unsigned long) 10, temp);
+  }
 
   // If mtry not set, use floored square root of number of independent variables.
   if (mtry == 0) {
@@ -126,14 +134,24 @@ void ForestClassification::predictInternal(size_t sample_idx) {
       if (prediction_type == TERMINALNODES) {
         predictions[0][sample_idx][tree_idx] = getTreePredictionTerminalNodeID(tree_idx, sample_idx);
       } else {
-        predictions[0][sample_idx][tree_idx] = getTreePrediction(tree_idx, sample_idx);
+		if (divfortype == 1) {
+          predictions[0][sample_idx][tree_idx] = getTreePrediction(tree_idx, sample_idx);
+		}
+		if (divfortype == 2) {
+          predictions[0][sample_idx][tree_idx] = getTreePredictionMultivariate(tree_idx, sample_idx);
+		}
       }
     }
   } else {
     // Count classes over trees and save class with maximum count
     std::unordered_map<double, size_t> class_count;
     for (size_t tree_idx = 0; tree_idx < num_trees; ++tree_idx) {
-      ++class_count[getTreePrediction(tree_idx, sample_idx)];
+	  if (divfortype == 1) {
+        ++class_count[getTreePrediction(tree_idx, sample_idx)];
+	  }
+	  if (divfortype == 2) {
+		++class_count[getTreePredictionMultivariate(tree_idx, sample_idx)];
+	  }
     }
     predictions[0][0][sample_idx] = mostFrequentValue(class_count, random_number_generator);
   }
@@ -151,8 +169,13 @@ void ForestClassification::computePredictionErrorInternal() {
   // For each tree loop over OOB samples and count classes
   for (size_t tree_idx = 0; tree_idx < num_trees; ++tree_idx) {
     for (size_t sample_idx = 0; sample_idx < trees[tree_idx]->getNumSamplesOob(); ++sample_idx) {
-      size_t sampleID = trees[tree_idx]->getOobSampleIDs()[sample_idx];
-      ++class_counts[sampleID][getTreePrediction(tree_idx, sample_idx)];
+	  size_t sampleID = trees[tree_idx]->getOobSampleIDs()[sample_idx];
+	  if (divfortype == 1) {
+        ++class_counts[sampleID][getTreePrediction(tree_idx, sample_idx)];
+	  }
+	  if (divfortype == 2) {
+        ++class_counts[sampleID][getTreePredictionMultivariate(tree_idx, sample_idx)];
+	  }
     }
   }
 
@@ -309,7 +332,12 @@ void ForestClassification::loadFromFileInternal(std::ifstream& infile) {
     readVector1D(split_varIDs, infile);
     std::vector<double> split_values;
     readVector1D(split_values, infile);
-
+	
+	std::vector<size_t> split_types;
+    std::vector<std::vector<size_t>> split_multvarIDs;
+    std::vector<std::vector<std::vector<bool>>> split_directs;
+    std::vector<std::vector<std::vector<double>>> split_multvalues;
+	
     // If dependent variable not in test data, change variable IDs accordingly
     if (num_variables_saved > num_variables) {
       for (auto& varID : split_varIDs) {
@@ -321,13 +349,18 @@ void ForestClassification::loadFromFileInternal(std::ifstream& infile) {
 
     // Create tree
     trees.push_back(
-        make_unique<TreeClassification>(child_nodeIDs, split_varIDs, split_values, &class_values, &response_classIDs));
+        make_unique<TreeClassification>(child_nodeIDs, split_varIDs, split_values, split_types, split_multvarIDs, split_directs, split_multvalues, &class_values, &response_classIDs));
   }
 }
 
 double ForestClassification::getTreePrediction(size_t tree_idx, size_t sample_idx) const {
   const auto& tree = dynamic_cast<const TreeClassification&>(*trees[tree_idx]);
   return tree.getPrediction(sample_idx);
+}
+
+double ForestClassification::getTreePredictionMultivariate(size_t tree_idx, size_t sample_idx) const {
+  const auto& tree = dynamic_cast<const TreeClassification&>(*trees[tree_idx]);
+  return tree.getPredictionMultivariate(sample_idx);
 }
 
 size_t ForestClassification::getTreePredictionTerminalNodeID(size_t tree_idx, size_t sample_idx) const {

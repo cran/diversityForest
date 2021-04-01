@@ -34,6 +34,9 @@ public:
   void loadForest(size_t dependent_varID, size_t num_trees,
       std::vector<std::vector<std::vector<size_t>> >& forest_child_nodeIDs,
       std::vector<std::vector<size_t>>& forest_split_varIDs, std::vector<std::vector<double>>& forest_split_values,
+	  std::vector<std::vector<size_t>>& forest_split_types, std::vector<std::vector<std::vector<size_t>>>& forest_split_multvarIDs, 
+	  std::vector<std::vector<std::vector<std::vector<bool>>>>& forest_split_directs, 
+	  std::vector<std::vector<std::vector<std::vector<double>>>>& forest_split_multvalues, 
       std::vector<double>& class_values, std::vector<std::vector<std::vector<double>>>& forest_terminal_class_counts,
       std::vector<bool>& is_ordered_variable);
 

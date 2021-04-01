@@ -21,20 +21,20 @@
 #
 # -------------------------------------------------------------------------------
 
-##' @export
+# @export
 predictions <- function(x, ...)  UseMethod("predictions")
 
-##' Extract predictions of \code{divfor.prediction} object.
-##'
-##'
-##' @title Diversity Forest predictions
-##' @param x \code{divfor.prediction} object.
-##' @param ... Further arguments passed to or from other methods.
-##' @return Predictions: Classes for Classification forests, Numerical values for Regressions forests and the estimated survival functions for all individuals for Survival forests.
-##' @seealso \code{\link{divfor}}
-##' @author Marvin N. Wright
-##' @aliases predictions
-##' @export
+# Extract predictions of \code{divfor.prediction} object.
+#
+#
+# @title Diversity Forest predictions
+# @param x \code{divfor.prediction} object.
+# @param ... Further arguments passed to or from other methods.
+# @return Predictions: Classes for Classification forests, Numerical values for Regressions forests and the estimated survival functions for all individuals for Survival forests.
+# @seealso \code{\link{divfor}}
+# @author Marvin N. Wright
+# @aliases predictions
+# @export
 predictions.divfor.prediction <- function(x, ...) {
   if (class(x) != "divfor.prediction") {
     stop("Object ist no divfor.prediction object.")
@@ -56,16 +56,16 @@ predictions.divfor.prediction <- function(x, ...) {
   }
 }
 
-##' Extract training data predictions of \code{divfor} object.
-##'
-##'
-##' @title Diversity Forest predictions
-##' @param x \code{divfor} object.
-##' @param ... Further arguments passed to or from other methods.
-##' @return Predictions: Classes for Classification forests, Numerical values for Regressions forests and the estimated survival functions for all individuals for Survival forests.
-##' @seealso \code{\link{divfor}}
-##' @author Marvin N. Wright
-##' @export
+# Extract training data predictions of \code{divfor} object.
+#
+#
+# @title Diversity Forest predictions
+# @param x \code{divfor} object.
+# @param ... Further arguments passed to or from other methods.
+# @return Predictions: Classes for Classification forests, Numerical values for Regressions forests and the estimated survival functions for all individuals for Survival forests.
+# @seealso \code{\link{divfor}}
+# @author Marvin N. Wright
+# @export
 predictions.divfor<- function(x, ...) {
   if (class(x) != "divfor") {
     stop("Object ist no divfor object.")

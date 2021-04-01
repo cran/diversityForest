@@ -169,6 +169,13 @@ void Data::getAllValues(std::vector<double>& all_values, std::vector<size_t>& sa
   }
 }
 
+void Data::getRawValues(std::vector<double>& all_values, std::vector<size_t>& sampleIDs, size_t varID, size_t start, size_t end) const {
+    all_values.reserve(end-start);
+    for (size_t pos = start; pos < end; ++pos) {
+      all_values.push_back(get(sampleIDs[pos], varID));
+    }
+}
+
 void Data::getMinMaxValues(double& min, double&max, std::vector<size_t>& sampleIDs, size_t varID, size_t start, size_t end) const {
   if (sampleIDs.size() > 0) {
     min = get(sampleIDs[0], varID);

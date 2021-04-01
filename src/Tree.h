@@ -28,28 +28,33 @@ public:
 
   // Create from loaded forest
   Tree(std::vector<std::vector<size_t>>& child_nodeIDs, std::vector<size_t>& split_varIDs,
-      std::vector<double>& split_values);
+      std::vector<double>& split_values, std::vector<size_t>& split_types, std::vector<std::vector<size_t>>& split_multvarIDs, 
+	  std::vector<std::vector<std::vector<bool>>>& split_directs, std::vector<std::vector<std::vector<double>>>& split_multvalues);
 
   virtual ~Tree() = default;
 
   Tree(const Tree&) = delete;
   Tree& operator=(const Tree&) = delete;
 
-  void init(const Data* data, uint mtry, uint max_triedsplits, double proptry, size_t dependent_varID, size_t num_samples, uint seed,
+  void init(const Data* data, uint mtry, uint nsplits, uint npairs, double proptry, size_t dependent_varID, size_t num_samples, uint seed,
       std::vector<size_t>* deterministic_varIDs, std::vector<size_t>* split_select_varIDs,
       std::vector<double>* split_select_weights, ImportanceMode importance_mode, uint min_node_size,
       bool sample_with_replacement, bool memory_saving_splitting, SplitRule splitrule,
       std::vector<double>* case_weights, std::vector<size_t>* manual_inbag, bool keep_inbag,
       std::vector<double>* sample_fraction, double alpha, double minprop, bool holdout, uint num_random_splits,
-      uint max_depth); // asdf
+      uint max_depth, std::vector<std::vector<size_t>>* promispairs, uint eim_mode, uint divfortype); // asdf
 
   virtual void allocateMemory() = 0;
 
   void grow(std::vector<double>* variable_importance);
 
   void predict(const Data* prediction_data, bool oob_prediction);
+  void predictMultivariate(const Data *prediction_data, bool oob_prediction);
 
   void computePermutationImportance(std::vector<double>& forest_importance, std::vector<double>& forest_variance);
+  void computePermutationImportanceMultivariate(std::vector<double> &forest_univ, std::vector<double> &forest_bivpooled, 
+    std::vector<double> &forest_bivqual, std::vector<double> &forest_bivquant_ll,
+	std::vector<double> &forest_bivquant_lh, std::vector<double> &forest_bivquant_hl, std::vector<double> &forest_bivquant_hh);
 
   void appendToFile(std::ofstream& file);
   virtual void appendToFileInternal(std::ofstream& file) = 0;
@@ -60,13 +65,31 @@ public:
   const std::vector<double>& getSplitValues() const {
     return split_values;
   }
+  
   const std::vector<size_t>& getSplitVarIDs() const {
     return split_varIDs;
+  }
+
+  const std::vector<size_t>& getSplitTypes() const {
+    return split_types;
+  }
+
+  const std::vector<std::vector<size_t>>& getSplitMultVarIDs() const {
+    return split_multvarIDs;
+  }
+  
+  const std::vector<std::vector<std::vector<bool>>>& getSplitDirects() const {
+    return split_directs;
+  }
+
+  const std::vector<std::vector<std::vector<double>>>& getSplitMultValues() const {
+    return split_multvalues;
   }
 
   const std::vector<size_t>& getOobSampleIDs() const {
     return oob_sampleIDs;
   }
+  
   size_t getNumSamplesOob() const {
     return num_samples_oob;
   }
@@ -78,16 +101,26 @@ public:
 protected:
   void createPossibleSplitVarSubset(std::vector<size_t>& result);
   void drawSplitsUnivariate(size_t nodeID, size_t n_triedsplits, std::vector<std::pair<size_t, double>>& sampled_varIDs_values); // asdf
+  void drawSplitsMultivariate(size_t nodeID, size_t n_triedsplits, std::vector<size_t>& sampled_split_types, std::vector<std::vector<size_t>>& sampled_split_multvarIDs, std::vector<std::vector<std::vector<bool>>>& sampled_split_directs, std::vector<std::vector<std::vector<double>>>& sampled_split_multvalues); // asdf
+  bool IsInRectangle(const Data* data, size_t sampleID, size_t split_type, std::vector<size_t>& split_multvarID, std::vector<std::vector<bool>>& split_direct, std::vector<std::vector<double>>& split_multvalue); // asdf	  
   
   bool splitNode(size_t nodeID);
   virtual bool splitNodeInternal(size_t nodeID, std::vector<size_t>& possible_split_varIDs) = 0;
   virtual bool splitNodeUnivariateInternal(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) = 0; // asdf
-  
+  virtual bool splitNodeMultivariateInternal(size_t nodeID, std::vector<size_t> sampled_split_types, std::vector<std::vector<size_t>> sampled_split_multvarIDs, std::vector<std::vector<std::vector<bool>>> sampled_split_directs, std::vector<std::vector<std::vector<double>>> sampled_split_multvalues) = 0; // asdf
+   
   void createEmptyNode();
   virtual void createEmptyNodeInternal() = 0;
+  void createEmptyNodeMultivariate();
 
   size_t dropDownSamplePermuted(size_t permuted_varID, size_t sampleID, size_t permuted_sampleID);
+  
+  size_t randomizedDropDownSample(std::vector<size_t> permuted_multvarID, size_t sampleID, size_t effect_type);
+  bool randomAssignLeftChildNode(size_t nodeID);
+
   void permuteAndPredictOobSamples(size_t permuted_varID, std::vector<size_t>& permutations);
+
+  void randomizedDropDownOobSamples(std::vector<size_t> permuted_multvarID, size_t effect_type);
 
   virtual double computePredictionAccuracyInternal() = 0;
 
@@ -106,7 +139,8 @@ protected:
 
   size_t dependent_varID;
   uint mtry;
-  uint max_triedsplits; // asdf
+  uint nsplits; // asdf
+  uint npairs;
   double proptry; // asdf
   
   // Number of samples (all samples, not only inbag for this tree)
@@ -137,6 +171,11 @@ protected:
   // For terminal nodes the prediction value is saved here
   std::vector<double> split_values;
 
+  std::vector<size_t> split_types;
+  std::vector<std::vector<size_t>> split_multvarIDs;
+  std::vector<std::vector<std::vector<bool>>> split_directs;
+  std::vector<std::vector<std::vector<double>>> split_multvalues;
+
   // Vector of left and right child node IDs, 0 for no child
   std::vector<std::vector<size_t>> child_nodeIDs;
 
@@ -150,6 +189,10 @@ protected:
   // IDs of OOB individuals, sorted
   std::vector<size_t> oob_sampleIDs;
 
+  std::vector<std::vector<size_t>>* promispairs;
+  uint eim_mode;
+  uint divfortype;
+  
   // Holdout mode
   bool holdout;
 
@@ -166,6 +209,15 @@ protected:
   // Variable importance for all variables
   std::vector<double>* variable_importance;
   ImportanceMode importance_mode;
+
+  // Effect importance:
+  std::vector<double>* eim_univ;
+  std::vector<double>* eim_bivpooled;
+  std::vector<double>* eim_bivqual;
+  std::vector<double>* eim_bivquant_ll;
+  std::vector<double>* eim_bivquant_lh;
+  std::vector<double>* eim_bivquant_hl;
+  std::vector<double>* eim_bivquant_hh;
 
   // When growing here the OOB set is used
   // Terminal nodeIDs for prediction samples

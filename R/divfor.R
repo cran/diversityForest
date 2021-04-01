@@ -21,35 +21,18 @@
 #
 # -------------------------------------------------------------------------------
 
-##' Implements diversity forests as presented in Hornung (inprep).
-##' Currently, classification, regression and survival prediction are possible.
-##' Moreover, the current version of the package only supports univariate, binary splitting, but future
-##' versions will allow using specific other split procedures. Because 'diversityForest' is a fork of the 
-##' 'ranger' R package (see below for details), the documentation is largely taken from
-##' 'ranger', where large parts of the documentation do not apply to (the current version of) the 'diversityForest' package.
-##' Moreover, \code{divfor} contains function arguments that are currently not supported, but will be
-##' in future versions of the package. However, the package is fully functional with respect to applying 
-##' diversity forest using univariate, binary splitting. See the example section
-##' for all basic application scenarios.
-##'
-##' As noted above, 'diversityForest' is a fork of the R package 'ranger' that implements random forests using an
-##' efficient C++ implementation. More precisely, 'diversityForest' was written by modifying
-##' the code of 'ranger', version 0.11.0. Therefore, details on further functionalities
-##' of the code that are not presented in the help pages of 'diversityForest' are found
-##' in the help pages of 'ranger' (version 0.11.0). The code in the example sections of \code{\link{divfor}} and \code{\link{tunedivfor}}
-##' can be used as a template for all basic application scenarios with respect to classification, regression and survival prediction
-##' using univariate, binary splitting. Some function arguments adopted from the 'ranger' 
-##' package are not useable with diversity forests (for the current package version).
+##' Implements the most basic form of diversity forests that uses univariable, binary splitting.
+##' Currently, categorical, metric, and survival outcomes are supported.
 ##' 
-##' @title Construct a Diversity Forest prediction rule
+##' @title Construct a basic diversity forest prediction rule that uses univariable, binary splitting.
 ##' @param formula Object of class \code{formula} or \code{character} describing the model to fit. Interaction terms supported only for numerical variables.
 ##' @param data Training data of class \code{data.frame}, \code{matrix}, \code{dgCMatrix} (Matrix) or \code{gwaa.data} (GenABEL).
 ##' @param num.trees Number of trees. Default is 500.
 ##' @param mtry Artefact from 'ranger'. NOT needed for diversity forests. 
 ##' @param importance Variable importance mode, one of 'none', 'impurity', 'impurity_corrected', 'permutation'. The 'impurity' measure is the Gini index for classification, the variance of the responses for regression and the sum of test statistics (see \code{splitrule}) for survival. NOTE: Currently, only "permutation" (and "none") work for diversity forests.
 ##' @param write.forest Save \code{divfor.forest} object, required for prediction. Set to \code{FALSE} to reduce memory usage if no prediction intended.
-##' @param probability Grow a probability forest as in Malley et al. (2012).
-##' @param min.node.size Minimal node size. Default 1 for classification.
+##' @param probability Grow a probability forest as in Malley et al. (2012). NOTE: Not yet implemented for diversity forests!
+##' @param min.node.size Minimal node size. Default 1 for classification, 5 for regression, 3 for survival, and 5 for probability.
 ##' @param max.depth Maximal tree depth. A value of NULL or 0 (the default) corresponds to unlimited depth, 1 to tree stumps (1 split per tree).
 ##' @param replace Sample with replacement. 
 ##' @param sample.fraction Fraction of observations to sample. Default is 1 for sampling with replacement and 0.632 for sampling without replacement. For classification, this can be a vector of class-specific values. 
@@ -72,11 +55,11 @@
 ##' @param save.memory Use memory saving (but slower) splitting mode. No effect for survival and GWAS data. Warning: This option slows down the tree growing, use only if you encounter memory problems. NOT needed for diversity forests.
 ##' @param verbose Show computation status and estimated runtime.
 ##' @param seed Random seed. Default is \code{NULL}, which generates the seed from \code{R}. Set to \code{0} to ignore the \code{R} seed. 
-##' @param dependent.variable.name Name of dependent variable, needed if no formula given. For survival forests this is the time variable. NOTE: Currently, diversity forests are only possible using the formula interface; thus, \code{dependent.variable.name} must not be specified.
-##' @param status.variable.name Name of status variable, only applicable to survival data and needed if no formula given. Use 1 for event and 0 for censoring. NOTE: Currently, diversity forests are only possible using the formula interface; thus, \code{status.variable.name} must not be specified.
+##' @param dependent.variable.name Name of outcome variable, needed if no formula given. For survival forests this is the time variable.
+##' @param status.variable.name Name of status variable, only applicable to survival data and needed if no formula given. Use 1 for event and 0 for censoring.
 ##' @param classification Only needed if data is a matrix. Set to \code{TRUE} to grow a classification forest.
 ##' @param nsplits Number of candidate splits to sample for each split. Default is 30.
-##' @param proptry parameter that restricts the number of candidate splits considered for small nodes. If \code{nsplits} is larger than \code{proptry} times the number of all possible splits, the number of candidate splits to draw is reduced to the largest integer smaller than \code{proptry} times the number of all possible splits. Default is 1, which corresponds to always using \code{nsplits} candidate splits.
+##' @param proptry Parameter that restricts the number of candidate splits considered for small nodes. If \code{nsplits} is larger than \code{proptry} times the number of all possible splits, the number of candidate splits to draw is reduced to the largest integer smaller than \code{proptry} times the number of all possible splits. Default is 1, which corresponds to always using \code{nsplits} candidate splits.
 ##' @return Object of class \code{divfor} with elements
 ##'   \item{\code{forest}}{Saved forest (If write.forest set to TRUE). Note that the variable IDs in the \code{split.varIDs} object do not necessarily represent the column number in R.}
 ##'   \item{\code{predictions}}{Predicted classes/values, based on out-of-bag samples (classification and regression only).}
@@ -99,6 +82,9 @@
 ##'   \item{\code{nsplits}}{Value of \code{nsplits} used.}
 ##'   \item{\code{proptry}}{Value of \code{proptry} used.}
 ##' @examples
+##' \dontrun{
+##' 
+##' ## Load package:
 ##' library("diversityForest")
 ##' 
 ##' ## Set seed to obtain reproducible results:
@@ -150,14 +136,16 @@
 ##' rg.iris <- divfor(Species ~ ., data = iris, importance = "permutation", num.trees = 20)
 ##' # NOTE again: num.trees = 20 is specified too small for practical purposes.
 ##' rg.iris$variable.importance
+##' }
 ##'
 ##' @author Roman Hornung, Marvin N. Wright
 ##' @references
 ##' \itemize{
+##'   \item Hornung R. (2020) Diversity Forests: Using split sampling to allow for complex split procedures in random forest. Technical Report No. 234, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/73377/index.html}.
 ##'   \item Wright, M. N. & Ziegler, A. (2017). "ranger: A fast implementation of random forests for high dimensional data in C++ and R". J Stat Softw 77:1-17, <\doi{10.18637/jss.v077.i01}>.
 ##'   \item Breiman, L. (2001). "Random forests". Mach Learn, 45:5-32, <\doi{10.1023/A:1010933404324}>.
 ##'   \item Malley, J. D., Kruppa, J., Dasgupta, A., Malley, K. G., & Ziegler, A. (2012). "Probability machines: consistent probability estimation using nonparametric learning machines". Methods Inf Med 51:74-81, <\doi{10.3414/ME00-01-0052}>.
-##'   \item Meinshausen (2006). "Quantile Regression Forests". J Mach Learn Res 7:983-999. \url{http://www.jmlr.org/papers/v7/meinshausen06a.html}.
+##'   \item Meinshausen (2006). "Quantile Regression Forests". J Mach Learn Res 7:983-999.
 ##'   }
 ##' @seealso \code{\link{predict.divfor}}
 ##' @encoding UTF-8
@@ -217,7 +205,7 @@ divfor <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
   ## Formula interface. Use whole data frame is no formula provided and depvarname given
   if (is.null(formula)) {
     if (is.null(dependent.variable.name)) {
-      stop("Error: Please give formula or dependent variable name.")
+      stop("Error: Please give formula or outcome variable name.")
     }
     if (is.null(status.variable.name)) {
       status.variable.name <- ""
@@ -246,7 +234,7 @@ divfor <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
   if (is.factor(response)) {
     if (nlevels(response) != nlevels(droplevels(response))) {
       dropped_levels <- setdiff(levels(response), levels(droplevels(response)))
-      warning("Dropped unused factor level(s) in dependent variable: ",
+      warning("Dropped unused factor level(s) in outcome variable: ",
               paste0(dropped_levels, collapse = ", "), ".", call. = FALSE)
     }
   }
@@ -269,7 +257,7 @@ divfor <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
   } else if (class(response) == "Surv" || is.data.frame(response) || is.matrix(response)) {
     treetype <- 5
   } else {
-    stop("Error: Unsupported type of dependent variable.")
+    stop("Error: Unsupported type of outcome variable.")
   }
   
   ## Quantile prediction only for regression
@@ -743,6 +731,7 @@ divfor <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
   rm("data.selected")
 
   ## Call divfor
+  
   result <- divforCpp(treetype, dependent.variable.name, data.final, variable.names, mtry,
                       num.trees, verbose, seed, num.threads, write.forest, importance.mode,
                       min.node.size, split.select.weights, use.split.select.weights,
@@ -752,7 +741,7 @@ divfor <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
                       save.memory, splitrule.num, case.weights, use.case.weights, class.weights, 
                       predict.all, keep.inbag, sample.fraction, alpha, minprop, holdout, prediction.type, 
                       num.random.splits, sparse.data, use.sparse.data, order.snps, oob.error, max.depth, 
-                      inbag, use.inbag, nsplits, proptry) ## asdf
+                      inbag, use.inbag, nsplits, npairs=0, proptry, divfortype=1, promispairs=list(0,0), eim_mode=0)
   
   if (length(result) == 0) {
     stop("User interrupt or internal error.")
@@ -880,13 +869,8 @@ divfor <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
       }))
     }
   }
-  
-  result$nsplits <- nsplits
-  result$proptry <- proptry
-  
+
   result$mtry <- NULL
-  result$max.triedsplits <- NULL
   
   return(result)
 }
-

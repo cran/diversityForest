@@ -170,6 +170,9 @@ void drawWithoutReplacementSkip(std::vector<size_t>& result, std::mt19937_64& ra
 void drawWithoutReplacementSimple(std::vector<size_t>& result, std::mt19937_64& random_number_generator, size_t max,
     const std::vector<size_t>& skip, size_t num_samples);
 
+void drawDoublesWithoutReplacement(std::vector<double>& result, std::mt19937_64& random_number_generator, 
+  std::vector<double> double_values, size_t num_samples);
+
 /**
  * Fisher Yates algorithm for sampling without replacement.
  * @param result Vector to add results to. Will not be cleaned before filling.
@@ -310,6 +313,13 @@ size_t roundToNextMultiple(size_t value, uint multiple);
  * @param split_char Char to separate parts
  */
 void splitString(std::vector<std::string>& result, const std::string& input, char split_char);
+
+// Returns value of Binomial Coefficient C(n, k)  
+size_t binomialCoeff(size_t n, size_t k);
+
+// Function that compares two nested arrays and returns true, if all elements are equal pairwise
+// and false else
+bool areArraysEqual(std::vector<size_t> first_array, std::vector<size_t> second_array);
 
 /**
  * Create numbers from 0 to n_all-1, shuffle and split in two parts.
@@ -488,6 +498,27 @@ std::vector<size_t> numSamplesLeftOfCutpoint(std::vector<double>& x, const std::
  * @return Input string stream with removed failbit if subnormal number
  */
 std::stringstream& readFromStream(std::stringstream& in, double& token);
+
+
+// Reorder the vector 'v' using the indices in 'order':
+/*
+template< class T >
+void reorder(std::vector<T> &v, std::vector<size_t> const &order )  {   
+    for ( int s = 1, d; s < order.size(); ++ s ) {
+        for ( d = order[s]; d < s; d = order[d] ) ;
+        if ( d == s ) while ( d = order[d], d != s ) std::swap( v[s], v[d] );
+    }
+}
+*/
+template< class T >
+std::vector<T> reorder(std::vector<T> &v, std::vector<size_t> const &order )  {   
+    std::vector<T> vreturn = v;
+	for ( int s = 1, d; s < order.size(); ++ s ) {
+        for ( d = order[s]; d < s; d = order[d] ) ;
+        if ( d == s ) while ( d = order[d], d != s ) std::swap( vreturn[s], vreturn[d] );
+    }
+	return vreturn;
+}
 
 // User interrupt from R
 #ifdef R_BUILD

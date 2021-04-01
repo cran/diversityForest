@@ -21,6 +21,8 @@ namespace diversityForest {
 void ForestProbability::loadForest(size_t dependent_varID, size_t num_trees,
     std::vector<std::vector<std::vector<size_t>> >& forest_child_nodeIDs,
     std::vector<std::vector<size_t>>& forest_split_varIDs, std::vector<std::vector<double>>& forest_split_values,
+	std::vector<std::vector<size_t>>& forest_split_types, std::vector<std::vector<std::vector<size_t>>>& forest_split_multvarIDs, 
+	std::vector<std::vector<std::vector<std::vector<bool>>>>& forest_split_directs, std::vector<std::vector<std::vector<std::vector<double>>>>& forest_split_multvalues,
     std::vector<double>& class_values, std::vector<std::vector<std::vector<double>>>& forest_terminal_class_counts,
     std::vector<bool>& is_ordered_variable) {
 
@@ -33,8 +35,8 @@ void ForestProbability::loadForest(size_t dependent_varID, size_t num_trees,
   trees.reserve(num_trees);
   for (size_t i = 0; i < num_trees; ++i) {
     trees.push_back(
-        make_unique<TreeProbability>(forest_child_nodeIDs[i], forest_split_varIDs[i], forest_split_values[i],
-            &this->class_values, &response_classIDs, forest_terminal_class_counts[i]));
+        make_unique<TreeProbability>(forest_child_nodeIDs[i], forest_split_varIDs[i], forest_split_values[i], forest_split_types[i], forest_split_multvarIDs[i], 
+	    forest_split_directs[i], forest_split_multvalues[i], &this->class_values, &response_classIDs, forest_terminal_class_counts[i]));
   }
 
   // Create thread ranges
@@ -52,6 +54,12 @@ std::vector<std::vector<std::vector<double>>> ForestProbability::getTerminalClas
 }
 
 void ForestProbability::initInternal(std::string status_variable_name) {
+
+  // If npairs not set, use floored square root of number of independent variables.
+  if (npairs == 0) {
+    unsigned long temp = (size_t)ceil(sqrt((double) (num_variables - 1)) / 2);
+    npairs = std::min((unsigned long) 10, temp);
+  }
 
   // If mtry not set, use floored square root of number of independent variables.
   if (mtry == 0) {
@@ -310,6 +318,11 @@ void ForestProbability::loadFromFileInternal(std::ifstream& infile) {
     std::vector<std::vector<double>> terminal_class_counts_vector;
     readVector2D(terminal_class_counts_vector, infile);
 
+	std::vector<size_t> split_types;
+    std::vector<std::vector<size_t>> split_multvarIDs;
+    std::vector<std::vector<std::vector<bool>>> split_directs;
+    std::vector<std::vector<std::vector<double>>> split_multvalues;
+
     // Convert Terminal node class counts to vector with empty elemtents for non-terminal nodes
     std::vector<std::vector<double>> terminal_class_counts;
     terminal_class_counts.resize(child_nodeIDs[0].size(), std::vector<double>());
@@ -328,7 +341,7 @@ void ForestProbability::loadFromFileInternal(std::ifstream& infile) {
 
     // Create tree
     trees.push_back(
-        make_unique<TreeProbability>(child_nodeIDs, split_varIDs, split_values, &class_values, &response_classIDs,
+        make_unique<TreeProbability>(child_nodeIDs, split_varIDs, split_values, split_types, split_multvarIDs, split_directs, split_multvalues, &class_values, &response_classIDs,
             terminal_class_counts));
   }
 }

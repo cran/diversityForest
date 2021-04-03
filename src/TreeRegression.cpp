@@ -106,7 +106,7 @@ bool TreeRegression::splitNodeInternal(size_t nodeID, std::vector<size_t>& possi
   return false;
 }
 
-// asdf: New function: Split node using univariate, binary splitting:
+// Diversity Forests: Split node using univariable, binary splitting:
 bool TreeRegression::splitNodeUnivariateInternal(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) {
 
   // Stop if maximum node size or depth reached
@@ -144,7 +144,7 @@ bool TreeRegression::splitNodeUnivariateInternal(size_t nodeID, std::vector<std:
   return false;
 }
 
-// asdf: New function: Split node using univariate, binary splitting:
+// Interaction forests: Split node
 bool TreeRegression::splitNodeMultivariateInternal(size_t nodeID, std::vector<size_t> sampled_split_types, std::vector<std::vector<size_t>> sampled_split_multvarIDs, std::vector<std::vector<std::vector<bool>>> sampled_split_directs, std::vector<std::vector<std::vector<double>>> sampled_split_multvalues) {
 	
 	// Stop, if no suitable split was found:
@@ -276,7 +276,7 @@ bool TreeRegression::findBestSplit(size_t nodeID, std::vector<size_t>& possible_
   return false;
 }
 
-// asdf: New function: Find the best split using univariate,
+// Diversity Forests: Find the best split using univariable,
 // binary splitting:
 bool TreeRegression::findBestSplitUnivariate(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) {
   
@@ -335,15 +335,8 @@ bool TreeRegression::findBestSplitUnivariate(size_t nodeID, std::vector<std::pai
 	  // Decrease:
 	  double decrease = sum_left * sum_left / (double) n_left + sum_right * sum_right / (double) n_right;
       
-	  // Some information I returned to the console while developing:
       ///Rcpp::Rcout << "varIDtemp: " << varIDtemp << std::endl;
-      ///Rcpp::Rcout << "valuetemp: " << valuetemp << std::endl;
-      ///Rcpp::Rcout << "sum_left: " << sum_left << std::endl;
-      ///Rcpp::Rcout << "n_left: " << n_left << std::endl;
-      ///Rcpp::Rcout << "sum_right: " << sum_right << std::endl;
-      ///Rcpp::Rcout << "n_right: " << n_right << std::endl;
-      ///Rcpp::Rcout << "decrease: " << decrease << std::endl;
-      
+
       // If better than before, use this
       if (decrease > best_decrease) {
         best_value = valuetemp;
@@ -354,10 +347,7 @@ bool TreeRegression::findBestSplitUnivariate(size_t nodeID, std::vector<std::pai
     
   }
   
-  	  // Some information I returned to the console while developing:
   ///Rcpp::Rcout << "best_varID: " << best_varID << std::endl;
-  ///Rcpp::Rcout << "best_value: " << best_value << std::endl;
-  	  // Rcpp::Rcout << "class_counts_right: " << std::endl;
   // std::copy(begin(class_counts_right), end(class_counts_right), std::ostream_iterator<size_t>(std::cout, " "));
   
   // Stop if no good split found
@@ -373,7 +363,7 @@ bool TreeRegression::findBestSplitUnivariate(size_t nodeID, std::vector<std::pai
   
 }
 
-// asdf: New function: Split node using univariate, binary splitting:
+// Interaction forests: Find the best candidate split:
 bool TreeRegression::findBestSplitMultivariate(size_t nodeID, std::vector<size_t> sampled_split_types, std::vector<std::vector<size_t>> sampled_split_multvarIDs, std::vector<std::vector<std::vector<bool>>> sampled_split_directs, std::vector<std::vector<std::vector<double>>> sampled_split_multvalues) {
  
 
@@ -426,15 +416,8 @@ bool TreeRegression::findBestSplitMultivariate(size_t nodeID, std::vector<size_t
 	  // Decrease:
 	  double decrease = sum_left * sum_left / (double) n_left + sum_right * sum_right / (double) n_right;
       
-	  // Some information I returned to the console while developing:
       ///Rcpp::Rcout << "varIDtemp: " << varIDtemp << std::endl;
-      ///Rcpp::Rcout << "valuetemp: " << valuetemp << std::endl;
-      ///Rcpp::Rcout << "sum_left: " << sum_left << std::endl;
-      ///Rcpp::Rcout << "n_left: " << n_left << std::endl;
-      ///Rcpp::Rcout << "sum_right: " << sum_right << std::endl;
-      ///Rcpp::Rcout << "n_right: " << n_right << std::endl;
-      ///Rcpp::Rcout << "decrease: " << decrease << std::endl;
-      
+
     // If better than before, use this
     if (decrease > best_decrease) {
 
@@ -463,11 +446,8 @@ best_split_multvalue[j].resize(nvars);
     return true;
   }
 
-  // Save best values samma
   //// Rcpp::Rcout << "Laenge split_types[nodeID]:  " << split_types.size() << std::endl;
-  //// Rcpp::Rcout << "nodeID:  " << nodeID << std::endl;
-  //// Rcpp::Rcout << "best_split_type:  " << best_split_type << std::endl;
-  
+
   split_types[nodeID] = best_split_type;
   
   split_multvarIDs[nodeID].resize(best_split_multvarID.size());

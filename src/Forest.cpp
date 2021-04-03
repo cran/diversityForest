@@ -726,13 +726,13 @@ void Forest::computePermutationImportance() {
 
 void Forest::computePermutationImportanceMultivariate() {
 
-// Compute tree permutation importance in multiple threads
+// Compute EIM values in multiple threads
 #ifdef OLD_WIN_R_BUILD
   progress = 0;
   clock_t start_time = clock();
   clock_t lap_time = clock();
 
-// Initailize importance and variance
+// Initialize importance
   eim_univ.resize(num_independent_variables, 0);
   if (eim_mode != 5) {
 	   if (eim_mode == 1) {
@@ -748,7 +748,7 @@ void Forest::computePermutationImportanceMultivariate() {
   eim_bivquant_hh.resize(promispairs.size(), 0);
 	   }
 	   }
-// Compute importance
+// Compute EIM
   for (size_t i = 0; i < num_trees; ++i) {
     trees[i]->computePermutationImportanceMultivariate(eim_univ, eim_bivpooled, eim_bivqual, 
 	  eim_bivquant_ll, eim_bivquant_lh, eim_bivquant_hl, eim_bivquant_hh);
@@ -765,7 +765,7 @@ void Forest::computePermutationImportanceMultivariate() {
   std::vector<std::thread> threads;
   threads.reserve(num_threads);
 
-// Initailize importance and variance
+// Initialize importance
   std::vector<std::vector<double>> eim_univ_threads(num_threads);
   std::vector<std::vector<double>> eim_bivpooled_threads(num_threads);
   std::vector<std::vector<double>> eim_bivqual_threads(num_threads);

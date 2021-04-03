@@ -124,13 +124,13 @@ bool TreeProbability::splitNodeInternal(size_t nodeID, std::vector<size_t>& poss
   return false;
 }
 
-// asdf: New function
+// Diversity Forests: split node using univariable, binary splitting (not yet implemented):
 bool TreeProbability::splitNodeUnivariateInternal(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) {
   // Auffuellen
   return false;
 }
 
-// asdf: New function: Split node using univariate, binary splitting:
+// Interaction Forests: Split node:
 bool TreeProbability::splitNodeMultivariateInternal(size_t nodeID, std::vector<size_t> sampled_split_types, std::vector<std::vector<size_t>> sampled_split_multvarIDs, std::vector<std::vector<std::vector<bool>>> sampled_split_directs, std::vector<std::vector<std::vector<double>>> sampled_split_multvalues) {
 
 	// Stop, if no suitable split was found:
@@ -251,12 +251,13 @@ bool TreeProbability::findBestSplit(size_t nodeID, std::vector<size_t>& possible
   return false;
 }
 
-// asdf: New function
+// Diversity Forests: Find the best split using univariable, binary splitting (not yet implemented):
 bool TreeProbability::findBestSplitUnivariate(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) {
   // Auffuellen
   return false;
 }
 
+// Interaction Forests: Find the best candidate split:
 bool TreeProbability::findBestSplitMultivariate(size_t nodeID, std::vector<size_t> sampled_split_types, std::vector<std::vector<size_t>> sampled_split_multvarIDs, std::vector<std::vector<std::vector<bool>>> sampled_split_directs, std::vector<std::vector<std::vector<double>>> sampled_split_multvalues) {
 	
   size_t num_samples_node = end_pos[nodeID] - start_pos[nodeID];
@@ -298,9 +299,6 @@ bool TreeProbability::findBestSplitMultivariate(size_t nodeID, std::vector<size_
   
     // Number of samples in left child:
     size_t n_left = num_samples_node - n_right;
-    //if (n_left == 0 || n_right == 0) {
-     // continue;
-    //}
 
     // Sum of squares
     double sum_left = 0;
@@ -344,11 +342,8 @@ best_split_multvalue[j].resize(nvars);
     return true;
   }
 
-  // Save best values samma
   //// Rcpp::Rcout << "Laenge split_types[nodeID]:  " << split_types.size() << std::endl;
-  //// Rcpp::Rcout << "nodeID:  " << nodeID << std::endl;
-  //// Rcpp::Rcout << "best_split_type:  " << best_split_type << std::endl;
-  
+
   split_types[nodeID] = best_split_type;
   
   split_multvarIDs[nodeID].resize(best_split_multvarID.size());

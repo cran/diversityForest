@@ -169,7 +169,7 @@ bool TreeSurvival::findBestSplit(size_t nodeID, std::vector<size_t>& possible_sp
   }
 }
 
-// asdf: New function: Find the best split using univariate,
+// Diversity forest: Find the best split using univariable,
 // binary splitting:
 bool TreeSurvival::findBestSplitUnivariate(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) {
 
@@ -288,7 +288,7 @@ bool TreeSurvival::findBestSplitUnivariate(size_t nodeID, std::vector<std::pair<
 
 }
 
-// asdf: New function: Split node using univariate, binary splitting:
+// Interaction forests: Find the best candidate split:
 bool TreeSurvival::findBestSplitMultivariate(size_t nodeID, std::vector<size_t> sampled_split_types, std::vector<std::vector<size_t>> sampled_split_multvarIDs, std::vector<std::vector<std::vector<bool>>> sampled_split_directs, std::vector<std::vector<std::vector<double>>> sampled_split_multvalues) {
  
   double best_logrank = -1;
@@ -407,7 +407,6 @@ best_split_multvalue[j].resize(nvars);
     return true;
   }
  
-  // Save best values samma
   //// Rcpp::Rcout << "Laenge split_types[nodeID]:  " << split_types.size() << std::endl;
   //// Rcpp::Rcout << "nodeID:  " << nodeID << std::endl;
   //// Rcpp::Rcout << "best_split_type:  " << best_split_type << std::endl;

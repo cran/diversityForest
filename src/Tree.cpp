@@ -99,13 +99,6 @@ namespace diversityForest
 
     this->variable_importance = variable_importance;
 
-    //for (size_t i = 0; i < (*promispairs).size(); ++i) {
-    //	Rcpp::Rcout << "Paar" << std::endl;
-    //	Rcpp::Rcout << "promispairs 1: " << (*promispairs)[i][0] << std::endl;
-    //	Rcpp::Rcout << "promispairs 2: " << (*promispairs)[i][1] << std::endl;
-    //	Rcpp::Rcout << " " << std::endl;
-    //}
-
     // Bootstrap, dependent if weighted or not and with or without replacement
     if (!case_weights->empty())
     {
@@ -149,11 +142,6 @@ namespace diversityForest
     start_pos[0] = 0;
     end_pos[0] = sampleIDs.size();
 
-    ////Rcpp::Rcout << "end_pos[0] = " << sampleIDs.size() << std::endl;
-    ////for (size_t i = 0; i < sampleIDs.size(); ++i) {
-    ////   	Rcpp::Rcout << "sampleIDs[i]: " << sampleIDs[i] << std::endl;
-    ////}
-
     // While not all nodes terminal, split next node
     size_t num_open_nodes = 1;
     size_t i = 0;
@@ -181,15 +169,11 @@ namespace diversityForest
           {
             last_left_nodeID = split_multvarIDs.size() - 2;
           }
-          ////Rcpp::Rcout << "last_left_nodeID " << i << ": " << last_left_nodeID << std::endl;
           ++depth;
-          ////Rcpp::Rcout << "depth " << i << ": " << depth << std::endl;
         }
       }
       ++i;
     }
-
-    /////Rcpp::Rcout << "depth: " << depth << std::endl; 
 
     // Delete sampleID vector to save memory
     sampleIDs.clear();
@@ -313,8 +297,6 @@ namespace diversityForest
 
         // Move to child
 
-        ////if (prediction_data->isOrderedVariable(split_varID))
-        ////{ 	    inrectangle = IsInRetangle(data, sampleID, split_type, split_multvarID, split_direct, split_multvalue);
         bool inrectangle = IsInRectangle(prediction_data, sample_idx, split_types[nodeID], split_multvarIDs[nodeID], split_directs[nodeID], split_multvalues[nodeID]);
         if (inrectangle)
         {
@@ -396,6 +378,7 @@ namespace diversityForest
     }
   }
 
+// Interaction Forests: Compute EIM values for the tree:
   void Tree::computePermutationImportanceMultivariate(std::vector<double> &forest_univ, std::vector<double> &forest_bivpooled,
                                                       std::vector<double> &forest_bivqual, std::vector<double> &forest_bivquant_ll,
                                                       std::vector<double> &forest_bivquant_lh, std::vector<double> &forest_bivquant_hl, std::vector<double> &forest_bivquant_hh)
@@ -406,7 +389,7 @@ namespace diversityForest
     // Compute normal prediction accuracy for each tree. Predictions already computed..
     double accuracy_normal = computePredictionAccuracyInternal();
 
-    // Compute univariate effect importance measure values:
+    // Compute univariate EIM values:
 
     prediction_terminal_nodeIDs.clear();
     prediction_terminal_nodeIDs.resize(num_samples_oob, 0);
@@ -447,10 +430,10 @@ namespace diversityForest
           }
           else
           {
-      // Drop down OOB obervations down the tree, where the decision is randomized, if the
+      // Drop OOB obervations down the tree, where the decision is randomized, if the
       // split uses permuted_multvarID, and re-calculate accuracy:
       permuted_multvarID[0] = varID;
-      randomizedDropDownOobSamples(permuted_multvarID, 1); // permuteAndPredictOobSamples
+      randomizedDropDownOobSamples(permuted_multvarID, 1);
       double accuracy_randomized = computePredictionAccuracyInternal();
 
       double accuracy_difference = accuracy_normal - accuracy_randomized;
@@ -462,7 +445,7 @@ namespace diversityForest
     if (eim_mode != 5)
     {
 
-      // Compute bivariate effect importance measure values:
+      // Compute bivariable EIM values:
 
       prediction_terminal_nodeIDs.clear();
       prediction_terminal_nodeIDs.resize(num_samples_oob, 0);
@@ -487,18 +470,15 @@ namespace diversityForest
           }
         }
 
-        //// Etaige Erweiterung: man kann das auch noch machen, dass split_type
-        /// gleich dem gewüschten split_type ist, d.u. da würde man dann
-        /// schauen, ob zusaetzlch auch die Richtung stimmt und
-        /// man würde noch weniger drop-downs machen.
-
-        // Drop down OOB obervations down the tree, where the decision is randomized, if the
+        // Drop OOB obervations down the tree, where the decision is randomized, if the
         // split uses permuted_multvarID, and re-calculate accuracy:
 
         // "pooled":
         if (eim_mode == 1)
         {
 
+          // Check whether at least one split in the tree uses
+		  // the variable pair permuted_multvarID:
           bool iscontained = false;
 
           for (size_t j = 0; j < split_multvarIDs.size(); ++j)
@@ -517,18 +497,30 @@ namespace diversityForest
 
           if (!iscontained)
           {
+            // If the variable pair is not used for splitting in the tree, this variable pair does
+		    // not change the predictions, which is why the EIM value for that variable pair in
+		    // that tree is zero:
             forest_bivpooled[i] += 0;
           }
           else
           {
-            randomizedDropDownOobSamples(permuted_multvarID, 2); // permuteAndPredictOobSamples
+            randomizedDropDownOobSamples(permuted_multvarID, 2);
             double accuracy_randomized = computePredictionAccuracyInternal();
 
             double accuracy_difference = accuracy_normal - accuracy_randomized;
             forest_bivpooled[i] += accuracy_difference;
           }
         }
-        // "qualitative":
+		
+		// HIER GEHTS WEITER MIT DEM KOMMENTIEREN
+		// HIER GEHTS WEITER MIT DEM KOMMENTIEREN
+		// HIER GEHTS WEITER MIT DEM KOMMENTIEREN
+		// HIER GEHTS WEITER MIT DEM KOMMENTIEREN
+		// HIER GEHTS WEITER MIT DEM KOMMENTIEREN
+		// HIER GEHTS WEITER MIT DEM KOMMENTIEREN
+		// HIER GEHTS WEITER MIT DEM KOMMENTIEREN
+		
+        // qualitative EIM values:
         if (eim_mode == 2 || eim_mode == 3)
         {
 

@@ -62,8 +62,6 @@ double TreeClassification::estimate(size_t nodeID) {
   for (size_t pos = start_pos[nodeID]; pos < end_pos[nodeID]; ++pos) {
     size_t sampleID = sampleIDs[pos];
     size_t value = (*response_classIDs)[sampleID];
-	// Rcpp::Rcout << "sampleID: " << sampleID << std::endl;
-	// Rcpp::Rcout << "value: " << value << std::endl;
     class_count[value] += (*class_weights)[value];
   }
 
@@ -122,7 +120,7 @@ bool TreeClassification::splitNodeInternal(size_t nodeID, std::vector<size_t>& p
   return false;
 }
 
-// asdf: New function: Split node using univariate, binary splitting:
+// Diversity Forests: Split node using univariable, binary splitting:
 bool TreeClassification::splitNodeUnivariateInternal(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) {
 	
   // Stop if maximum node size or depth reached
@@ -160,7 +158,7 @@ bool TreeClassification::splitNodeUnivariateInternal(size_t nodeID, std::vector<
   return false;
 }
 
-// asdf: New function: Split node using univariate, binary splitting:
+// Interaction Forests: Split node:
 bool TreeClassification::splitNodeMultivariateInternal(size_t nodeID, std::vector<size_t> sampled_split_types, std::vector<std::vector<size_t>> sampled_split_multvarIDs, std::vector<std::vector<std::vector<bool>>> sampled_split_directs, std::vector<std::vector<std::vector<double>>> sampled_split_multvalues) {
 	
 	// Stop, if no suitable split was found:
@@ -298,8 +296,7 @@ bool TreeClassification::findBestSplit(size_t nodeID, std::vector<size_t>& possi
   return false;
 }
 
-// asdf: New function: Find the best split using univariate,
-// binary splitting:
+// Diversity Forests: Find best split for univariable, binary splitting:
 bool TreeClassification::findBestSplitUnivariate(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) {
 
   size_t num_samples_node = end_pos[nodeID] - start_pos[nodeID];
@@ -390,7 +387,7 @@ bool TreeClassification::findBestSplitUnivariate(size_t nodeID, std::vector<std:
  
 }
 
-// asdf: New function: Split node using univariate, binary splitting:
+// Interaction Forests: Find candidate split:
 bool TreeClassification::findBestSplitMultivariate(size_t nodeID, std::vector<size_t> sampled_split_types, std::vector<std::vector<size_t>> sampled_split_multvarIDs, std::vector<std::vector<std::vector<bool>>> sampled_split_directs, std::vector<std::vector<std::vector<double>>> sampled_split_multvalues) {
 	
   size_t num_samples_node = end_pos[nodeID] - start_pos[nodeID];
@@ -432,9 +429,6 @@ bool TreeClassification::findBestSplitMultivariate(size_t nodeID, std::vector<si
   
     // Number of samples in left child:
     size_t n_left = num_samples_node - n_right;
-    //if (n_left == 0 || n_right == 0) {
-     // continue;
-    //}
 
     // Sum of squares
     double sum_left = 0;
@@ -478,11 +472,6 @@ best_split_multvalue[j].resize(nvars);
     return true;
   }
 
-  // Save best values samma
-  //// Rcpp::Rcout << "Laenge split_types[nodeID]:  " << split_types.size() << std::endl;
-  //// Rcpp::Rcout << "nodeID:  " << nodeID << std::endl;
-  //// Rcpp::Rcout << "best_split_type:  " << best_split_type << std::endl;
-  
   split_types[nodeID] = best_split_type;
   
   split_multvarIDs[nodeID].resize(best_split_multvarID.size());

@@ -9,6 +9,7 @@
  R package "diversityForest" under GPL3 license.
  #-------------------------------------------------------------------------------*/
 
+#include <Rcpp.h>
 #include <math.h>
 #include <algorithm>
 #include <stdexcept>

@@ -138,6 +138,8 @@ namespace diversityForest
       }
     }
 
+    ///Rcpp::Rcout << "Hier durch 1" << std::endl;
+
     // Init start and end positions
     start_pos[0] = 0;
     end_pos[0] = sampleIDs.size();

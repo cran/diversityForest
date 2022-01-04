@@ -31,16 +31,16 @@
 ##' This is a common distinction as these two types of interaction effects are interpreted in different ways (see below). 
 ##' For both of these types, EIM values for each variable pair are obtained: the quantitative and qualitative EIM values.\cr
 ##' Interaction forests target easily interpretable types of interaction effects. These can be communicated clearly using statements 
-##' of the following kind: "The strength of the positive (negative) effect of variable A on the outcome depends on the level of variable B."
-##' for quantitative interactions, and "For observations with small values of variable B, the effect of variable A is positive (negative), 
-##' but for observations with large values of B, the effect of A is negative (positive)." for qualitative interactions.\cr
+##' of the following kind: "The strength of the positive (negative) effect of variable A on the outcome depends on the level of variable B"
+##' for quantitative interactions, and "for observations with small values of variable B, the effect of variable A is positive (negative), 
+##' but for observations with large values of B, the effect of A is negative (positive)" for qualitative interactions.\cr
 ##' In addition to calculating EIM values for variable pairs, importance values for the individual variables are calculated as well, the univariable
 ##' EIM values. These measure the variable importance as in the case of classical variable importance measures of random forests.\cr
 ##' The effect importance mode can be set via the \code{importance} argument: \code{"qualitative"}: Calculate only qualitative EIM values;
 ##' \code{"quantitative"}: Calculate only quantitative EIM values; \code{"both"} (the default): Calculate qualitative and quantitative EIM
 ##' values; \code{"mainonly"}: Calculate only univariable EIM values.\cr
 ##' The top variable pairs with largest quantitative and qualitative EIM values likely have quantitative and qualitative interactions,
-##' respectively, which have a considerable impact on prediction. The top variables with largest EIM values likely have a considerable
+##' respectively, which have a considerable impact on prediction. The top variables with largest univariable EIM values likely have a considerable
 ##' impact on prediction.\cr
 ##' If the number of variables is larger than 100, not all possible variable pairs are considered, but, using a screening procedure, the
 ##' 5000 variable pairs with the strongest indications of interaction effects are pre-selected.\cr
@@ -51,25 +51,42 @@
 ##' but more seriously for high-dimensional data), the univariable EIM values can be biased. Therefore, it is strongly recommended 
 ##' to interpret the univariable EIM values with caution, if the data are high-dimensional. If it is of interest to measure the univariable 
 ##' importance of the variables for high-dimensional data, an additional conventional random forest (e.g., using the \code{ranger} package)
-##' should be constructed and the variable importance measure values of this random forest be used for ranking the univariable effects.
+##' should be constructed and the variable importance measure values of this random forest be used for ranking the univariable effects.\cr
+##' For large data sets with many observations the calculation of the EIM values can become very costly - when using fully grown trees.
+##' Therefore, when calculating EIM values for data sets with more than 1000 observations we use the following
+##' maximum tree depths by default (argument: \code{simplify.large.n = TRUE}):
+##' \itemize{
+##' \item if \eqn{n \le 1000}: Use fully grown trees.
+##' \item if \eqn{1000 < n \le 2000}: Use tree depth 10.
+##' \item if \eqn{2000 < n \le 5000}: Use tree depth 7.
+##' \item if \eqn{n > 5000}: Use tree depth 5.
+##' }
+##' Extensive analyses in Hornung & Boulesteix (2021) suggest that by restricting the tree depth in this way,
+##' the EIM values that would result when using fully grown trees are approximated well. However, the prediction
+##' performance suffers, when using restricted trees. Therefore, we restrict the tree depth only when calculating
+##' the EIM values (if \eqn{n > 1000}), but construct a second interaction forest with unrestricted tree depth,
+##' which is then used for prediction purposes.
 ##'
 ##' @title Construct an interaction forest prediction rule and calculate EIM values as described in Hornung & Boulesteix (2021).
 ##' @param formula Object of class \code{formula} or \code{character} describing the model to fit.
 ##' @param data Training data of class \code{data.frame}, \code{matrix}, \code{dgCMatrix} (Matrix) or \code{gwaa.data} (GenABEL).
-##' @param num.trees Number of trees. The default number is 20000, if EIM values should be computed 
-##' (and 2000 otherwise). This value may be reduced (e.g. to 10000), if the computation burden is too large. However, 
-##' for most datasets the default number of trees, 20000, should be well easily feasible within reasonable computation time.
-##' See also the argument \code{restrict.depth}, which can be used to restrict the depths of the trees for large data sets to
-##' save computation time.
 ##' @param importance Effect importance mode. One of the following: "both" (the default), "qualitative", "quantitative", "mainonly", "none". 
 ##' See the 'Details' section below for explanation.
+##' @param num.trees Number of trees. The default number is 20000, if EIM values should be computed 
+##' and 2000 otherwise. Note that if \code{simplify.large.n = TRUE} (default), the number of observations 
+##' is larger than 1000, and EIM values should be calculated two forests are constructed, one for calculating 
+##' the EIM values and one for prediction (cf. 'Details' section). In such cases, the default number of 
+##' trees used for the forest for EIM value calculation is 20000 and the default number of trees used 
+##' for the forest for prediction is 2000.
+##' @param simplify.large.n Should restricted tree depths be used, when calculating EIM values for large data sets? See the 'Details' section below for more information. Default is \code{TRUE}.
+##' @param num.trees.eim.large.n Number of trees in the forest used for calculating the EIM values for large data sets. 
+##' If \code{num.trees} is provided, but not \code{num.trees.eim.large.n}, the value given by \code{num.trees} 
+##' will be used. The default number is 20000. Only used when \code{simplify.large.n = TRUE}.
 ##' @param write.forest Save \code{interaction.forest} object, required for prediction. Set to \code{FALSE} to reduce 
 ##' memory usage if no prediction intended.
 ##' @param probability Grow a probability forest as in Malley et al. (2012).
 ##' @param min.node.size Minimal node size. Default 1 for classification, 5 for regression, 3 for survival, and 5 for probability.
 ##' @param max.depth Maximal tree depth. A value of NULL or 0 (the default) corresponds to unlimited depth, 1 to tree stumps (1 split per tree).
-##' @param restrict.depth If set to \code{TRUE}, the maximal tree depth will be automatically set to 15, if the data features more
-##' than 1000 observations.
 ##' @param replace Sample with replacement. Default is \code{FALSE}.
 ##' @param sample.fraction Fraction of observations to sample. Default is 1 for sampling with replacement and 0.7 for sampling without replacement. For classification, this can be a vector of class-specific values. 
 ##' @param case.weights Weights for sampling of training observations. Observations with larger weights will be selected with higher probability in the bootstrap (or subsampled) samples for the trees.
@@ -78,7 +95,7 @@
 ##' @param always.split.variables Currently not useable. Character vector with variable names to be always selected.
 ##' @param keep.inbag Save how often observations are in-bag in each tree. 
 ##' @param inbag Manually set observations per tree. List of size num.trees, containing inbag counts for each observation. Can be used for stratified sampling.
-##' @param holdout Hold-out mode. Hold-out all samples with case weight 0 and use these for variable importance and prediction error.
+##' @param holdout Hold-out mode. Hold-out all samples with case weight 0 and use these for variable importance and prediction error. NOTE: Currently, not useable for interaction forests.
 ##' @param quantreg Prepare quantile prediction as in quantile regression forests (Meinshausen 2006). Regression only. Set \code{keep.inbag = TRUE} to prepare out-of-bag quantile prediction. NOTE: Currently, not useable for interaction forests.
 ##' @param oob.error Compute OOB prediction error. Set to \code{FALSE} to save computation time, e.g. for large survival forests.
 ##' @param num.threads Number of threads. Default is number of CPUs available.
@@ -86,7 +103,7 @@
 ##' @param seed Random seed. Default is \code{NULL}, which generates the seed from \code{R}. Set to \code{0} to ignore the \code{R} seed. 
 ##' @param dependent.variable.name Name of outcome variable, needed if no formula given. For survival forests this is the time variable.
 ##' @param status.variable.name Name of status variable, only applicable to survival data and needed if no formula given. Use 1 for event and 0 for censoring.
-##' @param npairs Number of variable pairs to sample for each split. Default is the minimum of the square root of the number of independent variables divided by 2 (this number is rounded up) and 10 (i.e., a maximum value of 10 is used per default).
+##' @param npairs Number of variable pairs to sample for each split. Default is the square root of the number of independent variables divided by 2 (this number is rounded up).
 ##' @param classification Only needed if data is a matrix. Set to \code{TRUE} to grow a classification forest.
 ##' @return Object of class \code{interactionfor} with elements
 ##'   \item{\code{predictions}}{Predicted classes/values, based on out-of-bag samples (classification and regression only).}
@@ -108,7 +125,14 @@
 ##'   the effect of B is weak for small values of A and strong for large values of B. See Hornung & Boulesteix (2021) 
 ##'   for more information on the types of quantitative interaction effects targeted by interaction forest.}
 ##'   \item{\code{eim.quant}}{Quantitative EIM values. These values are labeled analoguously as those in \code{eim.quant.sorted}.} 
-##'   \item{\code{prediction.error}}{Overall out-of-bag prediction error. For classification this is the fraction of missclassified samples, for probability estimation the Brier score, for regression the mean squared error and for survival one minus Harrell's C-index.} 
+##'   \item{\code{prediction.error}}{Overall out-of-bag prediction error. 
+##'   For classification this is the fraction of misclassified samples, for probability 
+##'   estimation the Brier score, for regression the mean squared error and for survival 
+##'   one minus Harrell's C-index. This is 'NA' for data sets with more than 100
+##'   covariate variables, because for such data sets we pre-select the 5000 variable
+##'   pairs with strongest indications of interaction effects. This pre-selection cannot be taken into
+##'   account in the out-of-bag error estimation, which is why the out-of-bag error estimates would
+##'   be (much) too optimistic for data sets with more than 100 covariate variables.} 
 ##'   \item{\code{forest}}{Saved forest (If write.forest set to TRUE). Note that the variable IDs in the \code{split.multvarIDs} object do not necessarily represent the column number in R.} 
 ##'   \item{\code{confusion.matrix}}{Contingency table for classes and predictions based on out-of-bag samples (classification only).} 
 ##'   \item{\code{chf}}{Estimated cumulative hazard function for each sample (survival only).}
@@ -252,7 +276,7 @@
 ##' @references
 ##' \itemize{
 ##'   \item Hornung, R. & Boulesteix, A.-L. (2021). Interaction Forests: Identifying and exploiting interpretable quantitative and qualitative interaction effects. Technical Report No. 237, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/75432/index.html}.
-##'   \item Hornung, R. (2020) Diversity Forests: Using split sampling to allow for complex split procedures in random forest. Technical Report No. 234, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/73377/index.html}.
+##'   \item Hornung, R. (2022). "Diversity forests: Using split sampling to enable innovative complex split procedures in random forests". SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
 ##'   \item Peto, R., (1982) Statistical aspects of cancer trials. In: K.E. Halnam (Ed.), Treatment of Cancer. Chapman & Hall: London.
 ##'   \item Wright, M. N. & Ziegler, A. (2017). "ranger: A fast implementation of random forests for high dimensional data in C++ and R". J Stat Softw 77:1-17, <\doi{10.18637/jss.v077.i01}>.
 ##'   \item Breiman, L. (2001). "Random forests". Mach Learn, 45:5-32, <\doi{10.1023/A:1010933404324}>.
@@ -267,9 +291,10 @@
 ##' @import utils
 ##' @importFrom Matrix Matrix
 ##' @export
-interactionfor <- function(formula = NULL, data = NULL, num.trees = ifelse(importance=="none", 2000, 20000),
-                           importance = "both", write.forest = TRUE, probability = FALSE,
-                           min.node.size = NULL, max.depth = NULL, restrict.depth = FALSE, replace = FALSE, 
+interactionfor <- function(formula = NULL, data = NULL, importance = "both", num.trees = NULL,
+                           simplify.large.n = TRUE, num.trees.eim.large.n = NULL,
+                           write.forest = TRUE, probability = FALSE,
+                           min.node.size = NULL, max.depth = NULL, replace = FALSE, 
                            sample.fraction = ifelse(replace, 1, 0.7), 
                            case.weights = NULL, class.weights = NULL, splitrule = NULL, 
                            always.split.variables = NULL,
@@ -278,14 +303,18 @@ interactionfor <- function(formula = NULL, data = NULL, num.trees = ifelse(impor
                            num.threads = NULL,
                            verbose = TRUE, seed = NULL, 
                            dependent.variable.name = NULL, status.variable.name = NULL, npairs = NULL,
-                           classification = NULL) { # asdf
+                           classification = NULL) {
   
   respect.unordered.factors <- "order"
   save.memory <- FALSE
   
-  if(restrict.depth && nrow(data) > 1000) {
-    max.depth <- 15
-  }
+  maxdepthnull <- is.null(max.depth)
+  
+  
+  
+  #asdf
+  
+  
   
   ## GenABEL GWA data
   if ("gwaa.data" %in% class(data)) {
@@ -517,8 +546,11 @@ interactionfor <- function(formula = NULL, data = NULL, num.trees = ifelse(impor
   }
   
   ## Number of trees
-  if (!is.numeric(num.trees) || num.trees < 1) {
+  if (!is.null(num.trees) & (!is.numeric(num.trees) || num.trees < 1)) {
     stop("Error: Invalid value for num.trees.")
+  }
+  if (!is.null(num.trees.eim.large.n) & (!is.numeric(num.trees.eim.large.n) || num.trees.eim.large.n < 1)) {
+    stop("Error: Invalid value for num.trees.eim.large.n.")
   }
   
   ## npairs
@@ -866,22 +898,81 @@ interactionfor <- function(formula = NULL, data = NULL, num.trees = ifelse(impor
   ###cat(paste("Finished selecting promising pairs. Time taken: ", timetaken, " seconds.", sep=""), "\n")
   promispairs <- split(t(promispairs), rep(1:nrow(promispairs), each = ncol(promispairs)))
   
+  if (importance != "none" & simplify.large.n & maxdepthnull) {
+    if (nrow(data) <= 1000)
+      max.depth.eim <- max.depth
+    if (nrow(data) > 1000 & nrow(data) <= 2000)
+      max.depth.eim <- 10
+    if (nrow(data) > 2000 & nrow(data) <= 5000)
+      max.depth.eim <- 7
+    if (nrow(data) > 5000)
+      max.depth.eim <- 5
+  }
+  else
+    max.depth.eim <- max.depth
   
   split.select.weights <- list(c(0,0))
   use.split.select.weights <- FALSE
   num.random.splits <- 1
   
+  
+  ## Determine the right default values for
+  ## the number(s) of trees:
+  if (simplify.large.n & nrow(data) > 1000) {
+    if (is.null(num.trees))
+      num.trees <- 2000
+    else {
+      if (is.null(num.trees.eim.large.n))
+        num.trees.eim.large.n <- num.trees
+    }
+    if (is.null(num.trees.eim.large.n)) {
+      if(importance != "none")
+        num.trees.eim.large.n <- 20000
+      else
+        num.trees.eim.large.n <- 2000
+    }
+  }
+  else {
+    # If no restricted tree depth are used (i.e., if simplify.large.n=FALSE or
+    # nrow(data) <= 1000) we construct only one forest and the number of trees
+    # for that forest is called num.trees.eim.large.n:
+    if (is.null(num.trees)) {
+      if(importance != "none")
+        num.trees.eim.large.n <- 20000
+      else
+        num.trees.eim.large.n <- 2000
+    }
+    else
+      num.trees.eim.large.n <- num.trees
+  }
+  
   result <- divforCpp(treetype, dependent.variable.name, data.final, variable.names, mtry=0,
-                      num.trees, verbose, seed, num.threads, write.forest, importance.mode,
+                      num.trees.eim.large.n, verbose, seed, num.threads, write.forest, importance.mode,
                       min.node.size, split.select.weights, use.split.select.weights,
                       always.split.variables, use.always.split.variables,
                       status.variable.name, prediction.mode, loaded.forest, snp.data,
                       replace, probability, unordered.factor.variables, use.unordered.factor.variables, 
                       save.memory, splitrule.num, case.weights, use.case.weights, class.weights, 
                       predict.all, keep.inbag, sample.fraction, alpha=0.5, minprop=0.1, holdout, prediction.type, 
-                      num.random.splits, sparse.data, use.sparse.data, order.snps, oob.error, max.depth, 
+                      num.random.splits, sparse.data, use.sparse.data, order.snps, oob.error, max.depth.eim, 
                       inbag, use.inbag, nsplits=30, npairs, proptry=1, divfortype=2, promispairs, eim.mode)
   
+  if (importance != "none" & simplify.large.n & maxdepthnull & nrow(data) > 1000) {
+    importance.mode.forest <- 0
+    resultforest <- divforCpp(treetype, dependent.variable.name, data.final, variable.names, mtry=0,
+                              num.trees, verbose, seed, num.threads, write.forest, importance.mode.forest,
+                        min.node.size, split.select.weights, use.split.select.weights,
+                        always.split.variables, use.always.split.variables,
+                        status.variable.name, prediction.mode, loaded.forest, snp.data,
+                        replace, probability, unordered.factor.variables, use.unordered.factor.variables, 
+                        save.memory, splitrule.num, case.weights, use.case.weights, class.weights, 
+                        predict.all, keep.inbag, sample.fraction, alpha=0.5, minprop=0.1, holdout, prediction.type, 
+                        num.random.splits, sparse.data, use.sparse.data, order.snps, oob.error, max.depth, 
+                        inbag, use.inbag, nsplits=30, npairs, proptry=1, divfortype=2, promispairs, eim.mode)
+    result$forest <- resultforest$forest
+    result$num.trees <- resultforest$num.trees
+  }
+    
   if (length(result) == 0) {
     stop("User interrupt or internal error.")
   }
@@ -1070,6 +1161,17 @@ interactionfor <- function(formula = NULL, data = NULL, num.trees = ifelse(impor
   ## Splitrule
   result$splitrule <- splitrule
   
+  ## If the number of covariate variables is larger than 100, we pre-select
+  ## the 5000 variable pairs with the strongest indications of interaction effects.
+  ## However, this cannot be taken into account in the out-of-bag error estimation, which
+  ## is why the out-of-bag error estimate is too optimistic if the number of
+  ## covariate variables is larger than 100. Therefore, we set the
+  ## out-of-bag error 'prediction.error' to NA, if the number of variables
+  ## is larger than 1000:
+  if (result$num.independent.variables > 100) {
+    result$prediction.error <- NA
+  }
+  
   ## Set treetype
   if (treetype == 1) {
     result$treetype <- "Classification"
@@ -1103,52 +1205,52 @@ interactionfor <- function(formula = NULL, data = NULL, num.trees = ifelse(impor
     }
   }
   
-  ## Prepare quantile prediction
-  if (quantreg) {
-    terminal.nodes <- predict(result, data, type = "terminalNodes")$predictions + 1
-    n <- result$num.samples
-    result$random.node.values <- matrix(nrow = max(terminal.nodes), ncol = num.trees)
-    
-    ## Select one random obs per node and tree
-    for (tree in 1:num.trees){
-      idx <- sample(1:n, n)
-      result$random.node.values[terminal.nodes[idx, tree], tree] <- response[idx]
-    }
-    
-    ## Prepare out-of-bag quantile regression
-    if(!is.null(result$inbag.counts)) {
-      inbag.counts <- simplify2array(result$inbag.counts)
-      random.node.values.oob <- 0 * terminal.nodes
-      random.node.values.oob[inbag.counts > 0] <- NA
-      
-      ## For each tree and observation select one random obs in the same node (not the same obs)
-      for (tree in 1:num.trees){
-        is.oob <- inbag.counts[, tree] == 0
-        num.oob <- sum(is.oob)
-        
-        if (num.oob != 0) {
-          oob.obs <- which(is.oob)
-          oob.nodes <- terminal.nodes[oob.obs, tree]
-          for (j in 1:num.oob) {
-            idx <- terminal.nodes[, tree] == oob.nodes[j]
-            idx[oob.obs[j]] <- FALSE
-            random.node.values.oob[oob.obs[j], tree] <- save.sample(response[idx], size = 1)
-          }
-        }
-      }
-      
-      ## Check num.trees
-      minoob <- min(rowSums(inbag.counts == 0))
-      if (minoob < 10) {
-        stop("Error: Too few trees for out-of-bag quantile regression.")
-      }
-      
-      ## Use the same number of values for all obs, select randomly
-      result$random.node.values.oob <- t(apply(random.node.values.oob, 1, function(x) {
-        sample(x[!is.na(x)], minoob)
-      }))
-    }
-  }
+  # ## Prepare quantile prediction
+  # if (quantreg) {
+  #   terminal.nodes <- predict(result, data, type = "terminalNodes")$predictions + 1
+  #   n <- result$num.samples
+  #   result$random.node.values <- matrix(nrow = max(terminal.nodes), ncol = num.trees)
+  #   
+  #   ## Select one random obs per node and tree
+  #   for (tree in 1:num.trees){
+  #     idx <- sample(1:n, n)
+  #     result$random.node.values[terminal.nodes[idx, tree], tree] <- response[idx]
+  #   }
+  #   
+  #   ## Prepare out-of-bag quantile regression
+  #   if(!is.null(result$inbag.counts)) {
+  #     inbag.counts <- simplify2array(result$inbag.counts)
+  #     random.node.values.oob <- 0 * terminal.nodes
+  #     random.node.values.oob[inbag.counts > 0] <- NA
+  #     
+  #     ## For each tree and observation select one random obs in the same node (not the same obs)
+  #     for (tree in 1:num.trees){
+  #       is.oob <- inbag.counts[, tree] == 0
+  #       num.oob <- sum(is.oob)
+  #       
+  #       if (num.oob != 0) {
+  #         oob.obs <- which(is.oob)
+  #         oob.nodes <- terminal.nodes[oob.obs, tree]
+  #         for (j in 1:num.oob) {
+  #           idx <- terminal.nodes[, tree] == oob.nodes[j]
+  #           idx[oob.obs[j]] <- FALSE
+  #           random.node.values.oob[oob.obs[j], tree] <- save.sample(response[idx], size = 1)
+  #         }
+  #       }
+  #     }
+  #     
+  #     ## Check num.trees
+  #     minoob <- min(rowSums(inbag.counts == 0))
+  #     if (minoob < 10) {
+  #       stop("Error: Too few trees for out-of-bag quantile regression.")
+  #     }
+  #     
+  #     ## Use the same number of values for all obs, select randomly
+  #     result$random.node.values.oob <- t(apply(random.node.values.oob, 1, function(x) {
+  #       sample(x[!is.na(x)], minoob)
+  #     }))
+  #   }
+  # }
   
   result$mtry <- result$nsplits <- NULL
   

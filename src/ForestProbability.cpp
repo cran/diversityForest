@@ -58,7 +58,7 @@ void ForestProbability::initInternal(std::string status_variable_name) {
   // If npairs not set, use floored square root of number of independent variables.
   if (npairs == 0) {
     unsigned long temp = (size_t)ceil(sqrt((double) (num_variables - 1)) / 2);
-    npairs = std::min((unsigned long) 10, temp);
+	npairs = temp;
   }
 
   // If mtry not set, use floored square root of number of independent variables.

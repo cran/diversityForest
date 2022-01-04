@@ -157,7 +157,6 @@ Rcpp::List divforCpp(uint treetype, std::string dependent_variable_name, Rcpp::N
         inbag, predict_all, keep_inbag, sample_fraction, nsplits, npairs, proptry, alpha, minprop, holdout, prediction_type, num_random_splits, 
         order_snps, max_depth, promispairs, eim_mode, divfortype); // asdf
 
-
     //// Rcpp::Rcout << "2: Geschafft " << std::endl;
 
     // Load forest object if in prediction mode

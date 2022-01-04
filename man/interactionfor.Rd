@@ -8,13 +8,14 @@
 interactionfor(
   formula = NULL,
   data = NULL,
-  num.trees = ifelse(importance == "none", 2000, 20000),
   importance = "both",
+  num.trees = NULL,
+  simplify.large.n = TRUE,
+  num.trees.eim.large.n = NULL,
   write.forest = TRUE,
   probability = FALSE,
   min.node.size = NULL,
   max.depth = NULL,
-  restrict.depth = FALSE,
   replace = FALSE,
   sample.fraction = ifelse(replace, 1, 0.7),
   case.weights = NULL,
@@ -40,14 +41,21 @@ interactionfor(
 
 \item{data}{Training data of class \code{data.frame}, \code{matrix}, \code{dgCMatrix} (Matrix) or \code{gwaa.data} (GenABEL).}
 
-\item{num.trees}{Number of trees. The default number is 20000, if EIM values should be computed 
-(and 2000 otherwise). This value may be reduced (e.g. to 10000), if the computation burden is too large. However, 
-for most datasets the default number of trees, 20000, should be well easily feasible within reasonable computation time.
-See also the argument \code{restrict.depth}, which can be used to restrict the depths of the trees for large data sets to
-save computation time.}
-
 \item{importance}{Effect importance mode. One of the following: "both" (the default), "qualitative", "quantitative", "mainonly", "none". 
 See the 'Details' section below for explanation.}
+
+\item{num.trees}{Number of trees. The default number is 20000, if EIM values should be computed 
+and 2000 otherwise. Note that if \code{simplify.large.n = TRUE} (default), the number of observations 
+is larger than 1000, and EIM values should be calculated two forests are constructed, one for calculating 
+the EIM values and one for prediction (cf. 'Details' section). In such cases, the default number of 
+trees used for the forest for EIM value calculation is 20000 and the default number of trees used 
+for the forest for prediction is 2000.}
+
+\item{simplify.large.n}{Should restricted tree depths be used, when calculating EIM values for large data sets? See the 'Details' section below for more information. Default is \code{TRUE}.}
+
+\item{num.trees.eim.large.n}{Number of trees in the forest used for calculating the EIM values for large data sets. 
+If \code{num.trees} is provided, but not \code{num.trees.eim.large.n}, the value given by \code{num.trees} 
+will be used. The default number is 20000. Only used when \code{simplify.large.n = TRUE}.}
 
 \item{write.forest}{Save \code{interaction.forest} object, required for prediction. Set to \code{FALSE} to reduce 
 memory usage if no prediction intended.}
@@ -57,9 +65,6 @@ memory usage if no prediction intended.}
 \item{min.node.size}{Minimal node size. Default 1 for classification, 5 for regression, 3 for survival, and 5 for probability.}
 
 \item{max.depth}{Maximal tree depth. A value of NULL or 0 (the default) corresponds to unlimited depth, 1 to tree stumps (1 split per tree).}
-
-\item{restrict.depth}{If set to \code{TRUE}, the maximal tree depth will be automatically set to 15, if the data features more
-than 1000 observations.}
 
 \item{replace}{Sample with replacement. Default is \code{FALSE}.}
 
@@ -77,7 +82,7 @@ than 1000 observations.}
 
 \item{inbag}{Manually set observations per tree. List of size num.trees, containing inbag counts for each observation. Can be used for stratified sampling.}
 
-\item{holdout}{Hold-out mode. Hold-out all samples with case weight 0 and use these for variable importance and prediction error.}
+\item{holdout}{Hold-out mode. Hold-out all samples with case weight 0 and use these for variable importance and prediction error. NOTE: Currently, not useable for interaction forests.}
 
 \item{quantreg}{Prepare quantile prediction as in quantile regression forests (Meinshausen 2006). Regression only. Set \code{keep.inbag = TRUE} to prepare out-of-bag quantile prediction. NOTE: Currently, not useable for interaction forests.}
 
@@ -93,7 +98,7 @@ than 1000 observations.}
 
 \item{status.variable.name}{Name of status variable, only applicable to survival data and needed if no formula given. Use 1 for event and 0 for censoring.}
 
-\item{npairs}{Number of variable pairs to sample for each split. Default is the minimum of the square root of the number of independent variables divided by 2 (this number is rounded up) and 10 (i.e., a maximum value of 10 is used per default).}
+\item{npairs}{Number of variable pairs to sample for each split. Default is the square root of the number of independent variables divided by 2 (this number is rounded up).}
 
 \item{classification}{Only needed if data is a matrix. Set to \code{TRUE} to grow a classification forest.}
 }
@@ -118,7 +123,14 @@ Object of class \code{interactionfor} with elements
   the effect of B is weak for small values of A and strong for large values of B. See Hornung & Boulesteix (2021) 
   for more information on the types of quantitative interaction effects targeted by interaction forest.}
   \item{\code{eim.quant}}{Quantitative EIM values. These values are labeled analoguously as those in \code{eim.quant.sorted}.} 
-  \item{\code{prediction.error}}{Overall out-of-bag prediction error. For classification this is the fraction of missclassified samples, for probability estimation the Brier score, for regression the mean squared error and for survival one minus Harrell's C-index.} 
+  \item{\code{prediction.error}}{Overall out-of-bag prediction error. 
+  For classification this is the fraction of misclassified samples, for probability 
+  estimation the Brier score, for regression the mean squared error and for survival 
+  one minus Harrell's C-index. This is 'NA' for data sets with more than 100
+  covariate variables, because for such data sets we pre-select the 5000 variable
+  pairs with strongest indications of interaction effects. This pre-selection cannot be taken into
+  account in the out-of-bag error estimation, which is why the out-of-bag error estimates would
+  be (much) too optimistic for data sets with more than 100 covariate variables.} 
   \item{\code{forest}}{Saved forest (If write.forest set to TRUE). Note that the variable IDs in the \code{split.multvarIDs} object do not necessarily represent the column number in R.} 
   \item{\code{confusion.matrix}}{Contingency table for classes and predictions based on out-of-bag samples (classification only).} 
   \item{\code{chf}}{Estimated cumulative hazard function for each sample (survival only).}
@@ -163,16 +175,16 @@ The effect importance measure (EIM) of interaction forests distinguishes quantit
 This is a common distinction as these two types of interaction effects are interpreted in different ways (see below). 
 For both of these types, EIM values for each variable pair are obtained: the quantitative and qualitative EIM values.\cr
 Interaction forests target easily interpretable types of interaction effects. These can be communicated clearly using statements 
-of the following kind: "The strength of the positive (negative) effect of variable A on the outcome depends on the level of variable B."
-for quantitative interactions, and "For observations with small values of variable B, the effect of variable A is positive (negative), 
-but for observations with large values of B, the effect of A is negative (positive)." for qualitative interactions.\cr
+of the following kind: "The strength of the positive (negative) effect of variable A on the outcome depends on the level of variable B"
+for quantitative interactions, and "for observations with small values of variable B, the effect of variable A is positive (negative), 
+but for observations with large values of B, the effect of A is negative (positive)" for qualitative interactions.\cr
 In addition to calculating EIM values for variable pairs, importance values for the individual variables are calculated as well, the univariable
 EIM values. These measure the variable importance as in the case of classical variable importance measures of random forests.\cr
 The effect importance mode can be set via the \code{importance} argument: \code{"qualitative"}: Calculate only qualitative EIM values;
 \code{"quantitative"}: Calculate only quantitative EIM values; \code{"both"} (the default): Calculate qualitative and quantitative EIM
 values; \code{"mainonly"}: Calculate only univariable EIM values.\cr
 The top variable pairs with largest quantitative and qualitative EIM values likely have quantitative and qualitative interactions,
-respectively, which have a considerable impact on prediction. The top variables with largest EIM values likely have a considerable
+respectively, which have a considerable impact on prediction. The top variables with largest univariable EIM values likely have a considerable
 impact on prediction.\cr
 If the number of variables is larger than 100, not all possible variable pairs are considered, but, using a screening procedure, the
 5000 variable pairs with the strongest indications of interaction effects are pre-selected.\cr
@@ -183,7 +195,21 @@ NOTE ALSO: As described in Hornung & Boulesteix (2021), in the case of data with
 but more seriously for high-dimensional data), the univariable EIM values can be biased. Therefore, it is strongly recommended 
 to interpret the univariable EIM values with caution, if the data are high-dimensional. If it is of interest to measure the univariable 
 importance of the variables for high-dimensional data, an additional conventional random forest (e.g., using the \code{ranger} package)
-should be constructed and the variable importance measure values of this random forest be used for ranking the univariable effects.
+should be constructed and the variable importance measure values of this random forest be used for ranking the univariable effects.\cr
+For large data sets with many observations the calculation of the EIM values can become very costly - when using fully grown trees.
+Therefore, when calculating EIM values for data sets with more than 1000 observations we use the following
+maximum tree depths by default (argument: \code{simplify.large.n = TRUE}):
+\itemize{
+\item if \eqn{n \le 1000}: Use fully grown trees.
+\item if \eqn{1000 < n \le 2000}: Use tree depth 10.
+\item if \eqn{2000 < n \le 5000}: Use tree depth 7.
+\item if \eqn{n > 5000}: Use tree depth 5.
+}
+Extensive analyses in Hornung & Boulesteix (2021) suggest that by restricting the tree depth in this way,
+the EIM values that would result when using fully grown trees are approximated well. However, the prediction
+performance suffers, when using restricted trees. Therefore, we restrict the tree depth only when calculating
+the EIM values (if \eqn{n > 1000}), but construct a second interaction forest with unrestricted tree depth,
+which is then used for prediction purposes.
 }
 \examples{
 \dontrun{
@@ -297,7 +323,7 @@ table(zoo.test$type, pred.zoo$predictions)
 \references{
 \itemize{
   \item Hornung, R. & Boulesteix, A.-L. (2021). Interaction Forests: Identifying and exploiting interpretable quantitative and qualitative interaction effects. Technical Report No. 237, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/75432/index.html}.
-  \item Hornung, R. (2020) Diversity Forests: Using split sampling to allow for complex split procedures in random forest. Technical Report No. 234, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/73377/index.html}.
+  \item Hornung, R. (2022). "Diversity forests: Using split sampling to enable innovative complex split procedures in random forests". SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
   \item Peto, R., (1982) Statistical aspects of cancer trials. In: K.E. Halnam (Ed.), Treatment of Cancer. Chapman & Hall: London.
   \item Wright, M. N. & Ziegler, A. (2017). "ranger: A fast implementation of random forests for high dimensional data in C++ and R". J Stat Softw 77:1-17, <\doi{10.18637/jss.v077.i01}>.
   \item Breiman, L. (2001). "Random forests". Mach Learn, 45:5-32, <\doi{10.1023/A:1010933404324}>.

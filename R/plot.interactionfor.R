@@ -27,8 +27,15 @@
 ##' qualitative EIM values. Further visual exploration of the result of the interaction
 ##' forest analysis should be conducted using \code{\link{plotEffects}}.
 ##' 
-##' For details on the plots of the estimated forms of the bivariable influences of the variable pairs see \code{\link{plotEffects}}.\cr\cr
-##' NOTE: As described in Hornung & Boulesteix (2021), in the case of data with larger numbers of variables (larger than 100, but more seriously
+##' For details on the plots of the estimated forms of the bivariable influences of the variable pairs see \code{\link{plotEffects}}.
+##' 
+##' NOTE: The p-values shown in the plots are generally much too optimistic and \strong{MUST NOT} be reported 
+##' as the result of a statistical test for significance of interaction. To obtain adjusted p-values that would correspond to
+##' valid tests, it would be possible to multiply these p-values by the number of possible variable pairs, 
+##' which would correspond to Bonferroni-adjusted p-values. See the 'Details' section of \code{\link{plotEffects}} for further
+##' explanation and guidance.
+##' 
+##' NOTE ALSO: As described in Hornung & Boulesteix (2021), in the case of data with larger numbers of variables (larger than 100, but more seriously
 ##' for high-dimensional data), the univariable EIM values can be biased. Therefore, it is strongly recommended to interpret the univariable EIM values
 ##' with caution, if the data are high-dimensional. If it is of interest to measure the univariable importance of the variables for high-dimensional data,
 ##' an additional conventional random forest (e.g., using the \code{ranger} package) should be constructed and the variable importance measure values
@@ -87,7 +94,7 @@
 ##' @references
 ##' \itemize{
 ##'   \item Hornung, R. & Boulesteix, A.-L. (2021). Interaction Forests: Identifying and exploiting interpretable quantitative and qualitative interaction effects. Technical Report No. 237, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/75432/index.html}.
-##'   \item Hornung R. (2020) Diversity Forests: Using split sampling to allow for complex split procedures in random forest. Technical Report No. 234, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/73377/index.html}.
+##'   \item Hornung, R. (2022). "Diversity forests: Using split sampling to enable innovative complex split procedures in random forests". SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
 ##'   }
 ##' @seealso \code{\link{plotEffects}}
 ##' @encoding UTF-8

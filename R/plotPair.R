@@ -103,7 +103,7 @@
 ##' @references
 ##' \itemize{
 ##'   \item Hornung, R. & Boulesteix, A.-L. (2021). Interaction Forests: Identifying and exploiting interpretable quantitative and qualitative interaction effects. Technical Report No. 237, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/75432/index.html}.
-##'   \item Hornung R. (2020) Diversity Forests: Using split sampling to allow for complex split procedures in random forest. Technical Report No. 234, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/73377/index.html}.
+##'   \item Hornung, R. (2022). "Diversity forests: Using split sampling to enable innovative complex split procedures in random forests". SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
 ##'   }
 ##' @seealso \code{\link{plotEffects}}, \code{\link{plot.interactionfor}}
 ##' @encoding UTF-8
@@ -136,6 +136,13 @@ plotPair <- function(pair, yvarname, statusvarname=NULL, data, levelsorder1=NULL
   x1 <- data[,x1name]
   x2 <- data[,x2name]
   y <- data[,yvarname]
+  
+  if(length(class(x1))==2 & all(class(x1)==c("ordered", "factor"))) {
+    class(x1) <- "factor"
+  }
+  if(length(class(x2))==2 & all(class(x2)==c("ordered", "factor"))) {
+    class(x2) <- "factor"
+  }
   
   if(class(y)=="factor" & length(unique(y)) > 2) {
     taby <- table(y)
@@ -270,6 +277,7 @@ plotBinNumNum <- function(x1, x2, x1name, x2name, y, yvarname, pvalue, returnsep
   
   if(pvalue) {
     pinter <- summary(glm(y ~ x1*x2, family=binomial))$coef[4,4]
+	cat(paste("(Unadjusted) p-value: p =", pinter), "\n")
     issmall <- pinter < 0.0001
     pchar <- ifelse(issmall, "p < 0.0001", paste("p = ", format(round(pinter, 4), nsmall=4, scientific=FALSE), sep=""))
     
@@ -345,6 +353,7 @@ plotMetricNumNum <- function(x1, x2, x1name, x2name, y, yvarname, pvalue, return
   
   if(pvalue) {
     pinter <- summary(lm(y ~ x1*x2))$coef[4,4]
+	cat(paste("(Unadjusted) p-value: p =", pinter), "\n")
     issmall <- pinter < 0.0001
     pchar <- ifelse(issmall, "p < 0.0001", paste("p = ", format(round(pinter, 4), nsmall=4, scientific=FALSE), sep=""))
     
@@ -428,6 +437,7 @@ plotSurvNumNum <- function(x1, x2, x1name, x2name, y, yvarname, status, statusva
   
   if(pvalue) {
     pinter <- summary(survival::coxph(survival::Surv(y, status) ~ x1*x2, data =  dataloess))$coef[3,"Pr(>|z|)"]
+	cat(paste("(Unadjusted) p-value: p =", pinter), "\n")
     issmall <- pinter < 0.0001
     pchar <- ifelse(issmall, "p < 0.0001", paste("p = ", format(round(pinter, 4), nsmall=4, scientific=FALSE), sep=""))
     
@@ -519,6 +529,7 @@ plotBinCatNum <- function(x1, x2, x1name, x2name, y, yvarname, levelsorder1, pva
     coefs <- summary(glm(y ~ x1cat*x2, family=binomial))$coef
     pvals <- coefs[(length(levels(x1cat))+2):nrow(coefs), "Pr(>|z|)"]
     pinter <- min(p.adjust(pvals, method = "holm"))
+	cat(paste("(Unadjusted) p-value: p =", pinter), "\n")
     issmall <- pinter < 0.0001
     pchar <- ifelse(issmall, "p < 0.0001", paste("p = ", format(round(pinter, 4), nsmall=4, scientific=FALSE), sep=""))
     
@@ -590,6 +601,7 @@ plotMetricCatNum <- function(x1, x2, x1name, x2name, y, yvarname, levelsorder1, 
     coefs <- summary(lm(y ~ x1cat*x2))$coef
     pvals <- coefs[(length(levels(x1cat))+2):nrow(coefs), "Pr(>|t|)"]
     pinter <- min(p.adjust(pvals, method = "holm"))
+	cat(paste("(Unadjusted) p-value: p =", pinter), "\n")
     issmall <- pinter < 0.0001
     pchar <- ifelse(issmall, "p < 0.0001", paste("p = ", format(round(pinter, 4), nsmall=4, scientific=FALSE), sep=""))
     
@@ -658,6 +670,7 @@ plotSurvCatNum <- function(x1, x2, x1name, x2name, y, yvarname, status, statusva
     coefs <- summary(survival::coxph(survival::Surv(y, status) ~ x1cat*x2))$coef
     pvals <- coefs[(length(levels(x1cat))+1):nrow(coefs), "Pr(>|z|)"]
     pinter <- min(p.adjust(pvals, method = "holm"))
+	cat(paste("(Unadjusted) p-value: p =", pinter), "\n")
     issmall <- pinter < 0.0001
     pchar <- ifelse(issmall, "p < 0.0001", paste("p = ", format(round(pinter, 4), nsmall=4, scientific=FALSE), sep=""))
     
@@ -738,6 +751,7 @@ plotBinCatCat <- function(x1, x2, x1name, x2name, y, yvarname, levelsorder1, lev
     else {
       pvals <- coefs[(length(levels(x1cat))+length(levels(x2cat))):nrow(coefs), "Pr(>|z|)"]
       pinter <- min(p.adjust(pvals, method = "holm"))
+	  cat(paste("(Unadjusted) p-value: p =", pinter), "\n")
       issmall <- pinter < 0.0001
       pchar <- ifelse(issmall, "p < 0.0001", paste("p = ", format(round(pinter, 4), nsmall=4, scientific=FALSE), sep=""))
     }
@@ -790,6 +804,7 @@ plotMetricCatCat <- function(x1, x2, x1name, x2name, y, yvarname, levelsorder1, 
     else {
       pvals <- coefs[(length(levels(x1cat))+length(levels(x2cat))):nrow(coefs), "Pr(>|t|)"]
       pinter <- min(p.adjust(pvals, method = "holm"))
+	  cat(paste("(Unadjusted) p-value: p =", pinter), "\n")
       issmall <- pinter < 0.0001
       pchar <- ifelse(issmall, "p < 0.0001", paste("p = ", format(round(pinter, 4), nsmall=4, scientific=FALSE), sep=""))
     }
@@ -851,6 +866,7 @@ plotSurvCatCat <- function(x1, x2, x1name, x2name, y, yvarname, status, statusva
     else {
       pvals <- coefs[(length(levels(x1cat))+length(levels(x2cat))-1):nrow(coefs), "Pr(>|z|)"]
       pinter <- min(p.adjust(pvals, method = "holm"))
+	  cat(paste("(Unadjusted) p-value: p =", pinter), "\n")
       issmall <- pinter < 0.0001
       pchar <- ifelse(issmall, "p < 0.0001", paste("p = ", format(round(pinter, 4), nsmall=4, scientific=FALSE), sep=""))
     }

@@ -9,7 +9,7 @@ The diversity forest algorithm is not a specific algorithm, but an alternative c
 that makes complex split procedures in random forests possible computationally by drastically reducing 
 the numbers of candidate splits that need to be evaluated for each split. It also avoids the well-known variable 
 selection bias in conventional random forests that has the effect that variables with many possible splits 
-are selected too frequently for splitting (Strobl et al., 2007). For details, see Hornung (2020).
+are selected too frequently for splitting (Strobl et al., 2007). For details, see Hornung (2022).
 }
 \details{
 This package currently features two types of diversity forests:
@@ -36,7 +36,7 @@ regression and survival prediction.
 }
 \references{
 \itemize{
-  \item Hornung, R. (2020) Diversity Forests: Using split sampling to allow for complex split procedures in random forest. Technical Report No. 234, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/73377/index.html}.
+  \item Hornung, R. (2022). "Diversity forests: Using split sampling to enable innovative complex split procedures in random forests". SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
   \item Hornung, R. & Boulesteix, A.-L. (2021) Interaction Forests: Identifying and exploiting interpretable quantitative and qualitative interaction effects. Technical Report No. 237, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/75432/index.html}.
   \item Strobl, C., Boulesteix, A.-L., Zeileis, A., Hothorn, T. (2007) Bias in random forest variable importance measures: Illustrations, sources and a solution. BMC Bioinformatics, 8, 25.
   \item Wright, M. N. & Ziegler, A. (2017). "ranger: A fast implementation of random forests for high dimensional data in C++ and R". J Stat Softw 77:1-17, <\doi{10.18637/jss.v077.i01}>.

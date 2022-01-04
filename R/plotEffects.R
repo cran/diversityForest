@@ -22,7 +22,7 @@
 # -------------------------------------------------------------------------------
 
 ##' This function allows to visualise the (estimated) bivariable influences of pairs of variables (with large quantitative and qualitative
-##' EIM values) on the outcome. This step is crucial, because in order to interpret interaction effects
+##' EIM values) on the outcome. This step is crucial, because to interpret interaction effects
 ##' between variable pairs with large quantitative and qualitative EIM values, it is necessary to learn about the forms
 ##' these interaction effects take.
 ##'
@@ -39,7 +39,7 @@
 ##' members is metric and the other one categorical or both pair members are categorical:
 ##' \itemize{
 ##' \item If both pair members are metric and the outcome is categorical or metric we use two-dimensional LOESS regression, where 
-##' in the case of categorical outcomes, in order to obtain probability estimates for
+##' in the case of categorical outcomes, to obtain probability estimates for
 ##' the first class (or largest class for multi-class outcomes), we use the value
 ##' '1' for the first class (largest class for multi-class outcomes) and the value '0' for the second class
 ##' (all other classes for multi-class outcomes).
@@ -69,8 +69,22 @@
 ##' to the plots. If at least one of the variables in the considered variable pair is categorical and features more
 ##' than two categories, there are more than one interaction terms in the regression approaches used for testing,
 ##' because the categorical variables are dummy-coded. Therefore, in these cases we obtain a p-value for each interaction term.
-##' In order to obtain a single p-value for the test for interaction we adjust these multiple p-values using the Holm-Bonferroni
+##' to obtain a single p-value for the test for interaction we adjust these multiple p-values using the Holm-Bonferroni
 ##' procedure and take the minimum of the adjusted p-values.
+##' 
+##' \strong{NOTE}: These p-values are generally much too optimistic, in particular for small data sets and 
+##' large numbers of variables. The reason for this overoptimism is that these p-values are not adjusted 
+##' for the fact that we already used the data to find the variable pairs with strongest indications of 
+##' interaction effects. This is similar to a multiple testing problem.
+##' Therefore, these p-values should only be seen as a rough guide to be interpreted very cautiously
+##' and \strong{MUST NOT} be reported as the results of a statistical test for significance
+##' of interaction. To obtain adjusted p-values that would correspond to
+##' valid tests, it would be possible to multiply these p-values by the number of possible pairs, 
+##' which would correspond to Bonferroni-adjusted p-values. For example, assume that we have 30 
+##' covariate variables. In that case the number of possible pairs would be 'choose(30, 2) = 435', 
+##' which is why we would need to multiply each p-value by 435
+##' to obtain an adjusted p-value (or keep the original p-values and divide the significance 
+##' level 0.05 by 435). Note, however, that Bonferroni-adjusted p-values deliver quite conservative results.
 ##' 
 ##' @title Interaction forest plots: Exploring Interaction Forest results through visualisation
 ##' @param intobj Object of class \code{interactionfor}. 
@@ -88,7 +102,8 @@
 ##' with other variables in the data set and if so, which forms these interactions take.
 ##' @param pvalues Set to \code{TRUE} (default) to add to the plots p-values from tests for interaction effect obtained using classical
 ##' parametric regression approaches. For categorical outcomes logistic regression is used, for metric outcomes linear
-##' regression and for survival outcomes Cox regression. See the 'Details' section below for further details.
+##' regression and for survival outcomes Cox regression. NOTE: These p-values are generally much too optimistic and \strong{MUST NOT} be reported 
+##' as the result of a statistical test for significance of interaction. See the 'Details' section below for further details.
 ##' @param twoplots Set to \code{TRUE} / \code{FALSE} if for each plot page the results of two / one pair(s) of variables should be shown. Default is \code{TRUE}.
 ##' @param addtitles Set to \code{TRUE} (default) to add headings providing the names of the variables in each pair. If \code{type="quant"}, these
 ##' headings also give information on the type of quantitative interaction effect. Setting \code{addtitles} to \code{FALSE} is, for example, useful,
@@ -226,7 +241,7 @@
 ##' @references
 ##' \itemize{
 ##'   \item Hornung, R. & Boulesteix, A.-L. (2021). Interaction Forests: Identifying and exploiting interpretable quantitative and qualitative interaction effects. Technical Report No. 237, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/75432/index.html}.
-##'   \item Hornung R. (2020) Diversity Forests: Using split sampling to allow for complex split procedures in random forest. Technical Report No. 234, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/73377/index.html}.
+##'   \item Hornung, R. (2022). "Diversity forests: Using split sampling to enable innovative complex split procedures in random forests". SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
 ##'   }
 ##' @seealso \code{\link{plot.interactionfor}}, \code{\link{plotPair}}
 ##' @encoding UTF-8

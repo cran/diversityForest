@@ -70,7 +70,7 @@ arguments adopted from the 'ranger' package may not be useable with diversity fo
 }
 \references{
 \itemize{
-  \item Hornung R. (2020) Diversity Forests: Using split sampling to allow for complex split procedures in random forest. Technical Report No. 234, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/73377/index.html}.
+  \item Hornung, R. (2022). "Diversity forests: Using split sampling to enable innovative complex split procedures in random forests". SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
   \item Wright, M. N. & Ziegler, A. (2017). "ranger: A fast Implementation of Random Forests for High Dimensional Data in C++ and R". J Stat Softw 77:1-17, <\doi{10.18637/jss.v077.i01}>.
   \item Wager, S., Hastie T., & Efron, B. (2014). "Confidence Intervals for Random Forests: The Jackknife and the Infinitesimal Jackknife". J Mach Learn Res 15:1625-1651.
   \item Meinshausen (2006). "Quantile Regression Forests". J Mach Learn Res 7:983-999.

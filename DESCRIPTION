@@ -2,8 +2,8 @@ Package: diversityForest
 Type: Package
 Title: Innovative Complex Split Procedures in Random Forests Through
         Candidate Split Sampling
-Version: 0.3.2
-Date: 2022-01-04
+Version: 0.3.3
+Date: 2022-01-05
 Author: Roman Hornung [aut, cre], Marvin N. Wright [ctb, cph]
 Maintainer: Roman Hornung <hornung@ibe.med.uni-muenchen.de>
 Description: Implements interaction forests [1], which are specific diversity forests and 
@@ -38,6 +38,6 @@ Suggests: testthat, BOLTSSIRR
 Additional_repositories: https://romanhornung.github.io/drat
 RoxygenNote: 7.1.1
 NeedsCompilation: yes
-Packaged: 2022-01-04 16:48:35 UTC; hornung
+Packaged: 2022-01-05 10:59:57 UTC; hornung
 Repository: CRAN
-Date/Publication: 2022-01-05 00:00:02 UTC
+Date/Publication: 2022-01-05 12:00:05 UTC

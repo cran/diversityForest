@@ -26,7 +26,7 @@ timepoints <- function(x, ...)  UseMethod("timepoints")
 
 # Autor: Marvin N. Wright
 timepoints.divfor.prediction <- function(x, ...) {
-  if (class(x) != "divfor.prediction") {
+  if (!inherits(x, "divfor.prediction")) {
     stop("Object ist no divfor.prediction object.")
   }
   if (x$treetype != "Survival") {
@@ -40,7 +40,7 @@ timepoints.divfor.prediction <- function(x, ...) {
 
 # Autor: Marvin N. Wright
 timepoints.divfor <- function(x, ...) {
-  if (class(x) != "divfor") {
+  if (!inherits(x, "divfor")) {
     stop("Object ist no divfor object.")
   }
   if (x$treetype != "Survival") {

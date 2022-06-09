@@ -56,7 +56,7 @@ head(zoo)
 }
 \references{
 \itemize{
-  \item Vanschoren, J., van Rijn, J. N., Bischl, B., Torgo, L. (2013) OpenML: networked science in machine learning. SIGKDD Explorations, 15(2), 49--60.
+  \item Vanschoren, J., van Rijn, J. N., Bischl, B., Torgo, L. (2013). OpenML: networked science in machine learning. SIGKDD Explorations 15(2):49-60, <\doi{10.1145/2641190.2641198}>.
   \item Dua, D., Graff, C. (2019) UCI Machine Learning Repository. Irvine, CA: University of California, School of Information and Computer Science. \url{https://archive.ics.uci.edu/ml/}.
   }
 }

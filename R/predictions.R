@@ -36,7 +36,7 @@ predictions <- function(x, ...)  UseMethod("predictions")
 # @aliases predictions
 # @export
 predictions.divfor.prediction <- function(x, ...) {
-  if (class(x) != "divfor.prediction") {
+  if (!inherits(x, "divfor.prediction")) {
     stop("Object ist no divfor.prediction object.")
   }
   if (x$treetype == "Classification" || x$treetype == "Regression" || x$treetype == "Probability estimation") {
@@ -67,7 +67,7 @@ predictions.divfor.prediction <- function(x, ...) {
 # @author Marvin N. Wright
 # @export
 predictions.divfor<- function(x, ...) {
-  if (class(x) != "divfor") {
+  if (!inherits(x, "divfor")) {
     stop("Object ist no divfor object.")
   }
   if (x$treetype == "Classification" || x$treetype == "Regression" || x$treetype == "Probability estimation") {

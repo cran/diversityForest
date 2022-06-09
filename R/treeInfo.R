@@ -23,7 +23,7 @@
 
 # Author: Marvin N. Wright
 treeInfo <- function(object, tree = 1) {
-  if (class(object) != "divfor" & class(object) != "holdoutRF") {
+  if (!inherits(object, "divfor") & !inherits(object, "holdoutRF")) {
     stop("Error: Invalid class of input object.")
   } 
   forest <- object$forest

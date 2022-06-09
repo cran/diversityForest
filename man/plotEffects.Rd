@@ -3,7 +3,7 @@
 \encoding{UTF-8}
 \name{plotEffects}
 \alias{plotEffects}
-\title{Interaction forest plots: Exploring Interaction Forest results through visualisation}
+\title{Interaction forest plots: exploring interaction forest results through visualisation}
 \usage{
 plotEffects(
   intobj,
@@ -251,8 +251,8 @@ p
 }
 \references{
 \itemize{
-  \item Hornung, R. & Boulesteix, A.-L. (2021). Interaction Forests: Identifying and exploiting interpretable quantitative and qualitative interaction effects. Technical Report No. 237, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/75432/index.html}.
-  \item Hornung, R. (2022). "Diversity forests: Using split sampling to enable innovative complex split procedures in random forests". SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
+  \item Hornung, R., Boulesteix, A.-L. (2022). Interaction forests: Identifying and exploiting interpretable quantitative and qualitative interaction effects. Computational Statistics & Data Analysis 171:107460, <\doi{10.1016/j.csda.2022.107460}>.
+  \item Hornung, R. (2022). Diversity forests: Using split sampling to enable innovative complex split procedures in random forests. SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
   }
 }
 \seealso{

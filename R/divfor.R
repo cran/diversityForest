@@ -141,11 +141,11 @@
 ##' @author Roman Hornung, Marvin N. Wright
 ##' @references
 ##' \itemize{
-##'   \item Hornung, R. (2022). "Diversity forests: Using split sampling to enable innovative complex split procedures in random forests". SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
-##'   \item Wright, M. N. & Ziegler, A. (2017). "ranger: A fast implementation of random forests for high dimensional data in C++ and R". J Stat Softw 77:1-17, <\doi{10.18637/jss.v077.i01}>.
-##'   \item Breiman, L. (2001). "Random forests". Mach Learn, 45:5-32, <\doi{10.1023/A:1010933404324}>.
-##'   \item Malley, J. D., Kruppa, J., Dasgupta, A., Malley, K. G., & Ziegler, A. (2012). "Probability machines: consistent probability estimation using nonparametric learning machines". Methods Inf Med 51:74-81, <\doi{10.3414/ME00-01-0052}>.
-##'   \item Meinshausen (2006). "Quantile Regression Forests". J Mach Learn Res 7:983-999.
+##'   \item Hornung, R. (2022). Diversity forests: Using split sampling to enable innovative complex split procedures in random forests. SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
+##'   \item Wright, M. N., Ziegler, A. (2017). ranger: A fast implementation of random forests for high dimensional data in C++ and R. Journal of Statistical Software 77:1-17, <\doi{10.18637/jss.v077.i01}>.
+##'   \item Breiman, L. (2001). Random forests. Machine Learning 45:5-32, <\doi{10.1023/A:1010933404324}>.
+##'   \item Malley, J. D., Kruppa, J., Dasgupta, A., Malley, K. G., & Ziegler, A. (2012). Probability machines: consistent probability estimation using nonparametric learning machines. Methods of Information in Medicine 51:74-81, <\doi{10.3414/ME00-01-0052}>.
+##'   \item Meinshausen (2006). Quantile Regression Forests. Journal of Machine Learning Research 7:983-999.
 ##'   }
 ##' @seealso \code{\link{predict.divfor}}
 ##' @encoding UTF-8
@@ -216,7 +216,7 @@ divfor <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
     data.selected <- data
   } else {
     formula <- formula(formula)
-    if (class(formula) != "formula") {
+    if (!inherits(formula, "formula")) {
       stop("Error: Invalid formula.")
     }
     data.selected <- parse.formula(formula, data, env = parent.frame())
@@ -254,7 +254,7 @@ divfor <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
     } else {
       treetype <- 3
     }
-  } else if (class(response) == "Surv" || is.data.frame(response) || is.matrix(response)) {
+  } else if (inherits(response, "Surv") || is.data.frame(response) || is.matrix(response)) {
     treetype <- 5
   } else {
     stop("Error: Unsupported type of outcome variable.")

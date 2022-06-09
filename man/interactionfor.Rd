@@ -3,7 +3,7 @@
 \encoding{UTF-8}
 \name{interactionfor}
 \alias{interactionfor}
-\title{Construct an interaction forest prediction rule and calculate EIM values as described in Hornung & Boulesteix (2021).}
+\title{Construct an interaction forest prediction rule and calculate EIM values as described in Hornung & Boulesteix (2022).}
 \usage{
 interactionfor(
   formula = NULL,
@@ -120,7 +120,7 @@ Object of class \code{interactionfor} with elements
   pairs feature. For example, consider a variable pair A and B and say the label reads "A large AND B small".
   This would mean that if the value of A is large and, at the same time, the value
   of B is small, the expected value of the outcome variable is (considerably) different from all other cases. For this type of quantitative interaction,
-  the effect of B is weak for small values of A and strong for large values of B. See Hornung & Boulesteix (2021) 
+  the effect of B is weak for small values of A and strong for large values of B. See Hornung & Boulesteix (2022) 
   for more information on the types of quantitative interaction effects targeted by interaction forest.}
   \item{\code{eim.quant}}{Quantitative EIM values. These values are labeled analoguously as those in \code{eim.quant.sorted}.} 
   \item{\code{prediction.error}}{Overall out-of-bag prediction error. 
@@ -150,7 +150,7 @@ Object of class \code{interactionfor} with elements
   for which the expected values of the outcome variable are different, if the value of variable A is large 
   and, at the same time, the value of variable B is small.
   The list entries of the un-adjusted 'raw' quantitative EIM values are labeled with the suffix \code{.raw},
-  while the list entries of the adjusted quantitative EIM values miss this suffix. See Hornung & Boulesteix (2021) for details
+  while the list entries of the adjusted quantitative EIM values miss this suffix. See Hornung & Boulesteix (2022) for details
   on the raw and adjusted EIM values.}
   \item{\code{promispairs}}{List giving the indices of the variables in the pre-selected variable pairs. If the number of variables is at most
   100, all variable pairs are considered.} 
@@ -164,7 +164,7 @@ Object of class \code{interactionfor} with elements
   (survival time for survival); \code{statusvarname} is the name of the status variable.}
 }
 \description{
-Implements interaction forests as described in Hornung & Boulesteix (2021).
+Implements interaction forests as described in Hornung & Boulesteix (2022).
 Currently, categorical, metric, and survival outcomes are supported. Interaction forests feature the effect importance measure (EIM),
 which can be used to rank the covariate variable pairs with respect to the impact of their interaction effects on prediction.
 This allows to identify relevant interaction effects. Interaction forests focus on well interpretable interaction effects.
@@ -191,7 +191,7 @@ If the number of variables is larger than 100, not all possible variable pairs a
 NOTE: To make interpretations, it is crucial to investigate (visually) the forms the interaction effects of variable pairs 
 with large quantitative and qualitative EIM values take. This can be done using the plot function \code{\link{plot.interactionfor}} 
 (first overview) and \code{\link{plotEffects}}.\cr
-NOTE ALSO: As described in Hornung & Boulesteix (2021), in the case of data with larger numbers of variables (larger than 100, 
+NOTE ALSO: As described in Hornung & Boulesteix (2022), in the case of data with larger numbers of variables (larger than 100, 
 but more seriously for high-dimensional data), the univariable EIM values can be biased. Therefore, it is strongly recommended 
 to interpret the univariable EIM values with caution, if the data are high-dimensional. If it is of interest to measure the univariable 
 importance of the variables for high-dimensional data, an additional conventional random forest (e.g., using the \code{ranger} package)
@@ -205,7 +205,7 @@ maximum tree depths by default (argument: \code{simplify.large.n = TRUE}):
 \item if \eqn{2000 < n \le 5000}: Use tree depth 7.
 \item if \eqn{n > 5000}: Use tree depth 5.
 }
-Extensive analyses in Hornung & Boulesteix (2021) suggest that by restricting the tree depth in this way,
+Extensive analyses in Hornung & Boulesteix (2022) suggest that by restricting the tree depth in this way,
 the EIM values that would result when using fully grown trees are approximated well. However, the prediction
 performance suffers, when using restricted trees. Therefore, we restrict the tree depth only when calculating
 the EIM values (if \eqn{n > 1000}), but construct a second interaction forest with unrestricted tree depth,
@@ -322,13 +322,13 @@ table(zoo.test$type, pred.zoo$predictions)
 }
 \references{
 \itemize{
-  \item Hornung, R. & Boulesteix, A.-L. (2021). Interaction Forests: Identifying and exploiting interpretable quantitative and qualitative interaction effects. Technical Report No. 237, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/75432/index.html}.
-  \item Hornung, R. (2022). "Diversity forests: Using split sampling to enable innovative complex split procedures in random forests". SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
+  \item Hornung, R., Boulesteix, A.-L. (2022). Interaction forests: Identifying and exploiting interpretable quantitative and qualitative interaction effects. Computational Statistics & Data Analysis 171:107460, <\doi{10.1016/j.csda.2022.107460}>.
+  \item Hornung, R. (2022). Diversity forests: Using split sampling to enable innovative complex split procedures in random forests. SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
   \item Peto, R., (1982) Statistical aspects of cancer trials. In: K.E. Halnam (Ed.), Treatment of Cancer. Chapman & Hall: London.
-  \item Wright, M. N. & Ziegler, A. (2017). "ranger: A fast implementation of random forests for high dimensional data in C++ and R". J Stat Softw 77:1-17, <\doi{10.18637/jss.v077.i01}>.
-  \item Breiman, L. (2001). "Random forests". Mach Learn, 45:5-32, <\doi{10.1023/A:1010933404324}>.
-  \item Malley, J. D., Kruppa, J., Dasgupta, A., Malley, K. G., & Ziegler, A. (2012). "Probability machines: consistent probability estimation using nonparametric learning machines". Methods Inf Med 51:74-81, <\doi{10.3414/ME00-01-0052}>.
-  \item Meinshausen (2006). "Quantile Regression Forests". J Mach Learn Res 7:983-999.
+  \item Wright, M. N., Ziegler, A. (2017). ranger: A fast Implementation of Random Forests for High Dimensional Data in C++ and R. Journal of Statistical Software 77:1-17, <\doi{10.18637/jss.v077.i01}>.
+  \item Breiman, L. (2001). Random forests. Machine Learning 45:5-32, <\doi{10.1023/A:1010933404324}>.
+  \item Malley, J. D., Kruppa, J., Dasgupta, A., Malley, K. G., & Ziegler, A. (2012). Probability machines: consistent probability estimation using nonparametric learning machines. Methods of Information in Medicine 51:74-81, <\doi{10.3414/ME00-01-0052}>.
+  \item Meinshausen (2006). Quantile Regression Forests. Journal of Machine Learning Research 7:983-999.
   }
 }
 \seealso{

@@ -102,8 +102,8 @@
 ##' @author Roman Hornung
 ##' @references
 ##' \itemize{
-##'   \item Hornung, R. & Boulesteix, A.-L. (2021). Interaction Forests: Identifying and exploiting interpretable quantitative and qualitative interaction effects. Technical Report No. 237, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/75432/index.html}.
-##'   \item Hornung, R. (2022). "Diversity forests: Using split sampling to enable innovative complex split procedures in random forests". SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
+##'   \item Hornung, R., Boulesteix, A.-L. (2022). Interaction forests: Identifying and exploiting interpretable quantitative and qualitative interaction effects. Computational Statistics & Data Analysis 171:107460, <\doi{10.1016/j.csda.2022.107460}>.
+##'   \item Hornung, R. (2022). Diversity forests: Using split sampling to enable innovative complex split procedures in random forests. SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
 ##'   }
 ##' @seealso \code{\link{plotEffects}}, \code{\link{plot.interactionfor}}
 ##' @encoding UTF-8
@@ -144,7 +144,7 @@ plotPair <- function(pair, yvarname, statusvarname=NULL, data, levelsorder1=NULL
     class(x2) <- "factor"
   }
   
-  if(class(y)=="factor" & length(unique(y)) > 2) {
+  if(inherits(y, "factor") & length(unique(y)) > 2) {
     taby <- table(y)
     largestclass <- names(taby)[which.max(taby)]
     ynew <- rep(largestclass, length(y))
@@ -163,9 +163,9 @@ plotPair <- function(pair, yvarname, statusvarname=NULL, data, levelsorder1=NULL
     return(plotNumNum(x1=x1, x2=x2, x1name=x1name, x2name=x2name, y=y, status=status, yvarname=yvarname, statusvarname=statusvarname, pvalue=pvalue, returnseparate=returnseparate))
   }
   
-  if(((class(x1) %in% c("numeric", "integer")) & class(x2)=="factor") | (class(x1)=="factor" & (class(x2) %in% c("numeric", "integer")))) {
+  if(((class(x1) %in% c("numeric", "integer")) & inherits(x2, "factor")) | (inherits(x1, "factor") & (class(x2) %in% c("numeric", "integer")))) {
     
-    if((class(x1) %in% c("numeric", "integer")) & class(x2)=="factor") {
+    if((class(x1) %in% c("numeric", "integer")) & inherits(x2, "factor")) {
       x1safe <- x1
       x1namesafe <- x1name
       x1 <- x2
@@ -180,7 +180,7 @@ plotPair <- function(pair, yvarname, statusvarname=NULL, data, levelsorder1=NULL
   }
   
   
-  if(class(x1)=="factor" & class(x2)=="factor") {
+  if(inherits(x1, "factor") & inherits(x2, "factor")) {
     return(plotCatCat(x1=x1, x2=x2, x1name=x1name, x2name=x2name, y=y, status=status, yvarname=yvarname, 
                       statusvarname=statusvarname, levelsorder1=levelsorder1, levelsorder2=levelsorder2,
                       pvalue=pvalue, returnseparate=returnseparate))
@@ -195,7 +195,7 @@ plotPair <- function(pair, yvarname, statusvarname=NULL, data, levelsorder1=NULL
 plotNumNum <- function(x1, x2, x1name, x2name, y, status, yvarname, statusvarname, pvalue, returnseparate)
 {
   
-  if(class(y)=="factor") {
+  if(inherits(y, "factor")) {
     return(plotBinNumNum(x1=x1, x2=x2, x1name=x1name, x2name=x2name, y=y, yvarname=yvarname, 
                          pvalue=pvalue, returnseparate=returnseparate))
   }
@@ -299,7 +299,7 @@ plotMetricNumNum <- function(x1, x2, x1name, x2name, y, yvarname, pvalue, return
   
   # Fit loess to data to obtained estimated probabilities:
   loessfit <- try(suppressWarnings(loess(y ~ x1 * x2)), silent=TRUE)
-  if(class(loessfit)=="try-error")
+  if(inherits(loessfit, "try-error"))
     loessfit <- lm(y ~ x1 * x2)
   
   # Grids for x1 and x2:
@@ -376,7 +376,7 @@ plotSurvNumNum <- function(x1, x2, x1name, x2name, y, yvarname, status, statusva
   lo <- gam::lo
   loessfit <- try(suppressWarnings(MapGAM::gamcox(survival::Surv(y, status) ~ lo(x1, x2), data=dataloess, span=0.5, loess.trace="approximate")), silent=TRUE)
   errloess <- FALSE
-  if(class(loessfit)=="try-error") {
+  if(inherits(loessfit, "try-error")) {
     errloess <- TRUE
     loessfit <- survival::coxph(survival::Surv(y, status) ~ x1*x2, data=dataloess)
     medianloghaz <- median(predict(loessfit, newdata=dataloess))
@@ -458,7 +458,7 @@ plotSurvNumNum <- function(x1, x2, x1name, x2name, y, yvarname, status, statusva
 plotCatNum <- function(x1, x2, x1name, x2name, y, status, yvarname, statusvarname, levelsorder1, pvalue, returnseparate)
 {
   
-  if(class(y)=="factor") {
+  if(inherits(y, "factor")) {
     return(plotBinCatNum(x1=x1, x2=x2, x1name=x1name, x2name=x2name, y=y, yvarname=yvarname, levelsorder1=levelsorder1, pvalue=pvalue, 
                          returnseparate=returnseparate))
   }
@@ -502,7 +502,7 @@ plotBinCatNum <- function(x1, x2, x1name, x2name, y, yvarname, levelsorder1, pva
     x1x2gridtemp <- x1x2grid[x1x2grid$x2 >= x2ranges[1,i] & x1x2grid$x2 <= x2ranges[2,i] & x1x2grid$x1==categsx1[i],]
     names(x1x2gridtemp)[2] <- "x"
     preds <- try(suppressWarnings(predict(loessfit, newdata=x1x2gridtemp)), silent=TRUE)
-    if(class(preds)=="try-error") {
+    if(inherits(preds, "try-error")) {
       lmfit <- lm(y ~ x, data=loessdat)
       preds <- predict(lmfit, newdata=x1x2gridtemp)
     }
@@ -567,7 +567,7 @@ plotMetricCatNum <- function(x1, x2, x1name, x2name, y, yvarname, levelsorder1, 
       x1x2gridtemp <- x1x2grid[x1x2grid$x2 >= x2ranges[1,i] & x1x2grid$x2 <= x2ranges[2,i] & x1x2grid$x1==categsx1[i],]
       names(x1x2gridtemp)[2] <- "x"
       preds <- try(suppressWarnings(predict(loessfit, newdata=x1x2gridtemp)), silent=TRUE)
-      if(class(preds)=="try-error") {
+      if(inherits(preds, "try-error")) {
         lmfit <- lm(y ~ x, data=loessdat)
         preds <- predict(lmfit, newdata=x1x2gridtemp)
       }
@@ -695,7 +695,7 @@ plotSurvCatNum <- function(x1, x2, x1name, x2name, y, yvarname, status, statusva
 plotCatCat <- function(x1, x2, x1name, x2name, y, status, yvarname, statusvarname, levelsorder1, levelsorder2, pvalue, returnseparate)
 {
   
-  if(class(y)=="factor") {
+  if(inherits(y, "factor")) {
     return(plotBinCatCat(x1=x1, x2=x2, x1name=x1name, x2name=x2name, y=y, yvarname=yvarname, levelsorder1=levelsorder1, levelsorder2=levelsorder2, pvalue=pvalue, returnseparate=returnseparate))
   }
   

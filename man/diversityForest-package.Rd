@@ -16,10 +16,10 @@ This package currently features two types of diversity forests:
 \itemize{
 \item the basic form of diversity forests that uses univariable, binary splitting, which is also used
 in conventional random forests
-\item interaction forests (IFs) (Hornung & Boulesteix, 2021), which use bivariable splitting to model quantitative and qualitative interaction effects.
+\item interaction forests (IFs) (Hornung & Boulesteix, 2022), which use bivariable splitting to model quantitative and qualitative interaction effects.
 IFs feature the Effect Importance Measure (EIM), which ranks the variable pairs with respect to the predictive importance
 of their quantitative and qualitative interaction effects. The individual variables can be ranked as well
-using EIM. For details, see Hornung & Boulesteix (2021).
+using EIM. For details, see Hornung & Boulesteix (2022).
 }
 Diversity forests with univariable splitting can be constructed using the function \code{\link{divfor}} and 
 interaction forests using the function \code{\link{interactionfor}}. Both functions support categorical,
@@ -36,9 +36,9 @@ regression and survival prediction.
 }
 \references{
 \itemize{
-  \item Hornung, R. (2022). "Diversity forests: Using split sampling to enable innovative complex split procedures in random forests". SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
-  \item Hornung, R. & Boulesteix, A.-L. (2021) Interaction Forests: Identifying and exploiting interpretable quantitative and qualitative interaction effects. Technical Report No. 237, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/75432/index.html}.
-  \item Strobl, C., Boulesteix, A.-L., Zeileis, A., Hothorn, T. (2007) Bias in random forest variable importance measures: Illustrations, sources and a solution. BMC Bioinformatics, 8, 25.
-  \item Wright, M. N. & Ziegler, A. (2017). "ranger: A fast implementation of random forests for high dimensional data in C++ and R". J Stat Softw 77:1-17, <\doi{10.18637/jss.v077.i01}>.
+  \item Hornung, R. (2022). Diversity forests: Using split sampling to enable innovative complex split procedures in random forests. SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
+  \item Hornung, R., Boulesteix, A.-L. (2022). Interaction forests: Identifying and exploiting interpretable quantitative and qualitative interaction effects. Computational Statistics & Data Analysis 171:107460, <\doi{10.1016/j.csda.2022.107460}>.
+  \item Strobl, C., Boulesteix, A.-L., Zeileis, A., Hothorn, T. (2007). Bias in random forest variable importance measures: Illustrations, sources and a solution. BMC Bioinformatics 8:25, <\doi{10.1186/1471-2105-8-25}>.
+  \item Wright, M. N., Ziegler, A. (2017). ranger: A fast Implementation of Random Forests for High Dimensional Data in C++ and R. Journal of Statistical Software 77:1-17, <\doi{10.18637/jss.v077.i01}>.
   }
 }

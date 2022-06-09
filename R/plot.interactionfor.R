@@ -35,7 +35,7 @@
 ##' which would correspond to Bonferroni-adjusted p-values. See the 'Details' section of \code{\link{plotEffects}} for further
 ##' explanation and guidance.
 ##' 
-##' NOTE ALSO: As described in Hornung & Boulesteix (2021), in the case of data with larger numbers of variables (larger than 100, but more seriously
+##' NOTE ALSO: As described in Hornung & Boulesteix (2022), in the case of data with larger numbers of variables (larger than 100, but more seriously
 ##' for high-dimensional data), the univariable EIM values can be biased. Therefore, it is strongly recommended to interpret the univariable EIM values
 ##' with caution, if the data are high-dimensional. If it is of interest to measure the univariable importance of the variables for high-dimensional data,
 ##' an additional conventional random forest (e.g., using the \code{ranger} package) should be constructed and the variable importance measure values
@@ -93,8 +93,8 @@
 ##' @author Roman Hornung
 ##' @references
 ##' \itemize{
-##'   \item Hornung, R. & Boulesteix, A.-L. (2021). Interaction Forests: Identifying and exploiting interpretable quantitative and qualitative interaction effects. Technical Report No. 237, Department of Statistics, University of Munich. \url{https://epub.ub.uni-muenchen.de/75432/index.html}.
-##'   \item Hornung, R. (2022). "Diversity forests: Using split sampling to enable innovative complex split procedures in random forests". SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
+##'   \item Hornung, R., Boulesteix, A.-L. (2022). Interaction forests: Identifying and exploiting interpretable quantitative and qualitative interaction effects. Computational Statistics & Data Analysis 171:107460, <\doi{10.1016/j.csda.2022.107460}>.
+##'   \item Hornung, R. (2022). Diversity forests: Using split sampling to enable innovative complex split procedures in random forests. SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
 ##'   }
 ##' @seealso \code{\link{plotEffects}}
 ##' @encoding UTF-8

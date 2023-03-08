@@ -25,7 +25,10 @@
 ##' Currently, categorical, metric, and survival outcomes are supported. Interaction forests feature the effect importance measure (EIM),
 ##' which can be used to rank the covariate variable pairs with respect to the impact of their interaction effects on prediction.
 ##' This allows to identify relevant interaction effects. Interaction forests focus on well interpretable interaction effects.
-##' See the 'Details' section below for more details.
+##' See the 'Details' section below for more details. In addition, we strongly recommend to consult Section C of 
+##' Supplementary Material 1 of Hornung & Boulesteix (2022), which uses detailed examples of interaction forest analyses
+##' with code to illustrate how interaction forests can be used in 
+##' applications: \href{https://ars.els-cdn.com/content/image/1-s2.0-S0167947322000408-mmc1.pdf}{Link}.
 ##'
 ##' The effect importance measure (EIM) of interaction forests distinguishes quantitative and qualitative interaction effects (Peto, 1982).
 ##' This is a common distinction as these two types of interaction effects are interpreted in different ways (see below). 
@@ -41,10 +44,14 @@
 ##' values; \code{"mainonly"}: Calculate only univariable EIM values.\cr
 ##' The top variable pairs with largest quantitative and qualitative EIM values likely have quantitative and qualitative interactions,
 ##' respectively, which have a considerable impact on prediction. The top variables with largest univariable EIM values likely have a considerable
-##' impact on prediction.\cr
+##' impact on prediction. Note that it is currently not possible to test the EIM values for 
+##' statistical significance using the interaction forests algorithm itself. However, the p-values
+##' shown in the plots obtained with \code{\link{plotEffects}} (which are obtained using bivariable
+##' models) can be adjusted for multiple testing using the Bonferroni procedure to obtain
+##' practical p-values. See the end of the 'Details' section of \code{\link{plotEffects}} for explanation and guidance.\cr
 ##' If the number of variables is larger than 100, not all possible variable pairs are considered, but, using a screening procedure, the
 ##' 5000 variable pairs with the strongest indications of interaction effects are pre-selected.\cr
-##' NOTE: To make interpretations, it is crucial to investigate (visually) the forms the interaction effects of variable pairs 
+##' \strong{NOTE}: To make interpretations, it is crucial to investigate (visually) the forms the interaction effects of variable pairs 
 ##' with large quantitative and qualitative EIM values take. This can be done using the plot function \code{\link{plot.interactionfor}} 
 ##' (first overview) and \code{\link{plotEffects}}.\cr
 ##' NOTE ALSO: As described in Hornung & Boulesteix (2022), in the case of data with larger numbers of variables (larger than 100, 
@@ -122,7 +129,7 @@
 ##'   pairs feature. For example, consider a variable pair A and B and say the label reads "A large AND B small".
 ##'   This would mean that if the value of A is large and, at the same time, the value
 ##'   of B is small, the expected value of the outcome variable is (considerably) different from all other cases. For this type of quantitative interaction,
-##'   the effect of B is weak for small values of A and strong for large values of B. See Hornung & Boulesteix (2022) 
+##'   the effect of B is weak for small values of A and strong for large values of A. See Hornung & Boulesteix (2022) 
 ##'   for more information on the types of quantitative interaction effects targeted by interaction forest.}
 ##'   \item{\code{eim.quant}}{Quantitative EIM values. These values are labeled analoguously as those in \code{eim.quant.sorted}.} 
 ##'   \item{\code{prediction.error}}{Overall out-of-bag prediction error. 

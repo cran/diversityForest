@@ -103,9 +103,9 @@ Rcpp::List divforCpp(uint treetype, std::string dependent_variable_name, Rcpp::N
 
     // Initialize data 
     if (use_sparse_data) {
-      data = make_unique<DataSparse>(sparse_data, variable_names, num_rows, num_cols);
+      data = std::make_unique<DataSparse>(sparse_data, variable_names, num_rows, num_cols);
     } else {
-      data = make_unique<DataRcpp>(input_data, variable_names, num_rows,
+      data = std::make_unique<DataRcpp>(input_data, variable_names, num_rows,
           num_cols);
     }
 
@@ -123,19 +123,19 @@ Rcpp::List divforCpp(uint treetype, std::string dependent_variable_name, Rcpp::N
     switch (treetype) {
     case TREE_CLASSIFICATION:
       if (probability) {
-        forest = make_unique<ForestProbability>();
+        forest = std::make_unique<ForestProbability>();
       } else {
-        forest = make_unique<ForestClassification>();
+        forest = std::make_unique<ForestClassification>();
       }
       break;
     case TREE_REGRESSION:
-      forest = make_unique<ForestRegression>();
+      forest = std::make_unique<ForestRegression>();
       break;
     case TREE_SURVIVAL:
-      forest = make_unique<ForestSurvival>();
+      forest = std::make_unique<ForestSurvival>();
       break;
     case TREE_PROBABILITY:
-      forest = make_unique<ForestProbability>();
+      forest = std::make_unique<ForestProbability>();
       break;
     }
 

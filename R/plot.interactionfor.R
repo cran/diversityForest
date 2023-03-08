@@ -33,7 +33,9 @@
 ##' as the result of a statistical test for significance of interaction. To obtain adjusted p-values that would correspond to
 ##' valid tests, it would be possible to multiply these p-values by the number of possible variable pairs, 
 ##' which would correspond to Bonferroni-adjusted p-values. See the 'Details' section of \code{\link{plotEffects}} for further
-##' explanation and guidance.
+##' explanation and guidance. Note, however, that these Bonferroni-adjusted p-values should be interpreted
+##' with caution because, stemming from bivariable models, these p-values do not take the multivariable nature 
+##' of the data into account.
 ##' 
 ##' NOTE ALSO: As described in Hornung & Boulesteix (2022), in the case of data with larger numbers of variables (larger than 100, but more seriously
 ##' for high-dimensional data), the univariable EIM values can be biased. Therefore, it is strongly recommended to interpret the univariable EIM values

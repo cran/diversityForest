@@ -66,10 +66,10 @@ using a two-dimensional flexible function is shown. Such visualisations make it 
 about the forms of the interaction effects between variable pairs with large EIM values. Moreover,
 these visualisations reveal (pathological) cases in which variable pairs do not show
 indications of interaction effects despite featuring large EIM values.\cr
-For binary outcomes the estimated probabilities for the second class are predicted, for categorical outcomes with more than two classes
-the estimated probabilities for the largest class are predicted, for metric outcomes
-the means of the outcome are predicted, and for survival outcomes the log hazards ratio values compared to the median effect
-are predicted.\cr
+For binary outcomes the probabilities for the second class are estimated, for categorical outcomes with more than two classes
+the probabilities for the largest class (i.e., the class with the most observations) are estimated (using the function \code{\link{plotPair}}, a different
+class can be selected instead), for metric outcomes the means of the outcome are estimated, and for survival outcomes
+the log hazards ratio values compared to the median effect are estimated.\cr
 The kinds of estimates shown differ also according to whether both pair members are metric or only one of the two
 members is metric and the other one categorical or both pair members are categorical:
 \itemize{
@@ -119,7 +119,12 @@ which would correspond to Bonferroni-adjusted p-values. For example, assume that
 covariate variables. In that case the number of possible pairs would be 'choose(30, 2) = 435', 
 which is why we would need to multiply each p-value by 435
 to obtain an adjusted p-value (or keep the original p-values and divide the significance 
-level 0.05 by 435). Note, however, that Bonferroni-adjusted p-values deliver quite conservative results.
+level 0.05 by 435). Note, however, that Bonferroni-adjusted p-values deliver quite conservative results,
+that is, weaker effects might not be detected using these p-values, while, however, effects for
+which these p-values are small (\eqn{< 0.05}) are most likely relevant.
+Note further that these Bonferroni-adjusted p-values should be interpreted
+with caution because, stemming from bivariable models, these p-values do not take the 
+multivariable nature of the data into account.
 }
 \examples{
 \dontrun{

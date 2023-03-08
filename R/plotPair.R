@@ -29,6 +29,9 @@
 ##' 
 ##' @title Plot of the (estimated) simultaneous influence of two variables
 ##' @param pair Character string vector of length two, where the first character string gives the name of the first member of the respective pair to plot and the second character string gives the name of the second member.
+##' Note that the order of the two pair members in \code{pair} determines how the results are 
+##' visualised: The estimated influence of the second pair member is visualised conditionally
+##' on different values of the first pair member.
 ##' @param yvarname Name of outcome variable.
 ##' @param statusvarname Name of status variable, only applicable to survival data.
 ##' @param data Data frame containing the variables.
@@ -36,6 +39,12 @@
 ##' i-th entry contains the name of the category that should take the i-th place in the ordering of the categories of the first variable.
 ##' @param levelsorder2 Optional. Order the categories of the second variable should have in the plot (if it is categorical). Character string vector specified in an analogous
 ##' way as \code{levelsorder1}.
+##' @param categprob Optional. Only relevant for categorical outcomes with more than two classes. 
+##' Name of the class for which probabilities should be estimated. As described in \code{\link{plotEffects}}, 
+##' for categorical outcomes with more than two classes, by default the probabilities
+##' for the largest class (i.e., the class with the most observations) are estimated when visualising the
+##' bivariable influence of the variables. Using \code{categprob} a different class can be specified for the
+##' class for which probabilities should be estimated.
 ##' @param pvalue Set to \code{TRUE} (default) to add to the plot a p-value from a test for interaction effect obtained using a classical
 ##' parametric regression approach. For categorical outcomes logistic regression is used, for metric outcomes linear
 ##' regression and for survival outcomes Cox regression. See the 'Details' section of \code{\link{plotEffects}} for further details.
@@ -44,7 +53,7 @@
 ##' only one of the two plots. The default is \code{FALSE}, which results in the two plots being returned together in the form of a 
 ##' \code{ggarrange} object.
 ##' @param intobj Optional. Object of class \code{interactionfor}. If this is provided, the ordering of the categories
-##' obtained when constructing the interaction forest will be used for categorical variables. See Hornung & Boulesteix (2021) for details.
+##' obtained when constructing the interaction forest will be used for categorical variables. See Hornung & Boulesteix (2022) for details.
 ##' @return A ggplot2 plot.
 ##' @examples
 ##' \dontrun{
@@ -116,7 +125,7 @@
 ##' @importFrom ggpubr ggarrange annotate_figure text_grob
 ##' @importFrom rlang .data
 ##' @export
-plotPair <- function(pair, yvarname, statusvarname=NULL, data, levelsorder1=NULL, levelsorder2=NULL, pvalue=TRUE, returnseparate=FALSE, intobj=NULL) {
+plotPair <- function(pair, yvarname, statusvarname=NULL, data, levelsorder1=NULL, levelsorder2=NULL, categprob=NULL, pvalue=TRUE, returnseparate=FALSE, intobj=NULL) {
   
   x1name <- pair[1]
   x2name <- pair[2]
@@ -146,10 +155,11 @@ plotPair <- function(pair, yvarname, statusvarname=NULL, data, levelsorder1=NULL
   
   if(inherits(y, "factor") & length(unique(y)) > 2) {
     taby <- table(y)
-    largestclass <- names(taby)[which.max(taby)]
-    ynew <- rep(largestclass, length(y))
-    ynew[y!=largestclass] <- paste("not", largestclass)
-    ynew <- factor(ynew, levels=c(largestclass, paste("not", largestclass)))
+	if (is.null(categprob))
+      categprob <- names(taby)[which.max(taby)]
+    ynew <- rep(categprob, length(y))
+    ynew[y!=categprob] <- paste("not", categprob)
+    ynew <- factor(ynew, levels=c(categprob, paste("not", categprob)))
     y <- ynew
   }
   

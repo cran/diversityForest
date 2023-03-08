@@ -16,10 +16,8 @@
 #include <string>
 #include <ctime>
 #include <functional>
-#ifndef OLD_WIN_R_BUILD
 #include <thread>
 #include <chrono>
-#endif
 
 #include "utility.h"
 #include "Forest.h"
@@ -44,13 +42,13 @@ std::unique_ptr<Data> load_data_from_file(const std::string& data_path, const Me
   std::unique_ptr<Data> result { };
   switch (memory_mode) {
   case MEM_DOUBLE:
-    result = make_unique<DataDouble>();
+    result = std::make_unique<DataDouble>();
     break;
   case MEM_FLOAT:
-    result = make_unique<DataFloat>();
+    result = std::make_unique<DataFloat>();
     break;
   case MEM_CHAR:
-    result = make_unique<DataChar>();
+    result = std::make_unique<DataChar>();
     break;
   }
 
@@ -204,11 +202,7 @@ void Forest::init(std::string dependent_variable_name, MemoryMode memory_mode, s
 
   // Set number of threads
   if (num_threads == DEFAULT_NUM_THREADS) {
-#ifdef OLD_WIN_R_BUILD
-    this->num_threads = 1;
-#else
     this->num_threads = std::thread::hardware_concurrency();
-#endif
   } else {
     this->num_threads = num_threads;
   }
@@ -474,16 +468,6 @@ void Forest::grow() {
   variable_importance.resize(num_independent_variables, 0);
 
 // Grow trees in multiple threads
-#ifdef OLD_WIN_R_BUILD
-  progress = 0;
-  clock_t start_time = clock();
-  clock_t lap_time = clock();
-  for (size_t i = 0; i < num_trees; ++i) {
-    trees[i]->grow(&variable_importance);
-    progress++;
-    showProgress("Growing trees..", start_time, lap_time);
-  }
-#else
   progress = 0;
 #ifdef R_BUILD
   aborted = false;
@@ -524,8 +508,6 @@ void Forest::grow() {
     variable_importance_threads.clear();
   }
 
-#endif
-
 // Divide importance by number of trees
   if (importance_mode == IMP_GINI || importance_mode == IMP_GINI_CORRECTED) {
     for (auto& v : variable_importance) {
@@ -537,27 +519,6 @@ void Forest::grow() {
 void Forest::predict() {
 
 // Predict trees in multiple threads and join the threads with the main thread
-#ifdef OLD_WIN_R_BUILD
-  progress = 0;
-  clock_t start_time = clock();
-  clock_t lap_time = clock();
-  for (size_t i = 0; i < num_trees; ++i) {
-	if (divfortype == 1) {
-		trees[i]->predict(data.get(), false);
-	}
-	if (divfortype == 2) {
-		trees[i]->predictMultivariate(data.get(), false);
-	}
-    progress++;
-    showProgress("Predicting..", start_time, lap_time);
-  }
-
-  // For all samples get tree predictions
-  allocatePredictMemory();
-  for (size_t sample_idx = 0; sample_idx < data->getNumRows(); ++sample_idx) {
-    predictInternal(sample_idx);
-  }
-#else
   progress = 0;
 #ifdef R_BUILD
   aborted = false;
@@ -593,27 +554,11 @@ void Forest::predict() {
     throw std::runtime_error("User interrupt.");
   }
 #endif
-#endif
 }
 
 void Forest::computePredictionError() {
 
 // Predict trees in multiple threads
-#ifdef OLD_WIN_R_BUILD
-  progress = 0;
-  clock_t start_time = clock();
-  clock_t lap_time = clock();
-  for (size_t i = 0; i < num_trees; ++i) {
-	if (divfortype == 1) {
-		trees[i]->predict(data.get(), true);
-	}
-	if (divfortype == 2) {
-		trees[i]->predictMultivariate(data.get(), true);
-	}
-    progress++;
-    showProgress("Predicting..", start_time, lap_time);
-  }
-#else
   std::vector<std::thread> threads;
   threads.reserve(num_threads);
   progress = 0;
@@ -630,7 +575,6 @@ void Forest::computePredictionError() {
     throw std::runtime_error("User interrupt.");
   }
 #endif
-#endif
 
   // Call special function for subclasses
   computePredictionErrorInternal();
@@ -639,25 +583,6 @@ void Forest::computePredictionError() {
 void Forest::computePermutationImportance() {
 
 // Compute tree permutation importance in multiple threads
-#ifdef OLD_WIN_R_BUILD
-  progress = 0;
-  clock_t start_time = clock();
-  clock_t lap_time = clock();
-
-// Initailize importance and variance
-  variable_importance.resize(num_independent_variables, 0);
-  std::vector<double> variance;
-  if (importance_mode == IMP_PERM_BREIMAN || importance_mode == IMP_PERM_LIAW) {
-    variance.resize(num_independent_variables, 0);
-  }
-
-// Compute importance
-  for (size_t i = 0; i < num_trees; ++i) {
-    trees[i]->computePermutationImportance(variable_importance, variance);
-    progress++;
-    showProgress("Computing permutation importance..", start_time, lap_time);
-  }
-#else
   progress = 0;
 #ifdef R_BUILD
   aborted = false;
@@ -710,7 +635,6 @@ void Forest::computePermutationImportance() {
     }
     variance_threads.clear();
   }
-#endif
 
   for (size_t i = 0; i < variable_importance.size(); ++i) {
     variable_importance[i] /= num_trees;
@@ -728,35 +652,6 @@ void Forest::computePermutationImportance() {
 void Forest::computePermutationImportanceMultivariate() {
 
 // Compute EIM values in multiple threads
-#ifdef OLD_WIN_R_BUILD
-  progress = 0;
-  clock_t start_time = clock();
-  clock_t lap_time = clock();
-
-// Initialize importance
-  eim_univ.resize(num_independent_variables, 0);
-  if (eim_mode != 5) {
-	   if (eim_mode == 1) {
-  eim_bivpooled.resize(promispairs.size(), 0);
-	   }
-	   	   if (eim_mode == 2 || eim_mode == 3) {
-  eim_bivqual.resize(promispairs.size(), 0);
-	   }
-	   	   if (eim_mode == 2 || eim_mode == 4) {
-  eim_bivquant_ll.resize(promispairs.size(), 0);
-  eim_bivquant_lh.resize(promispairs.size(), 0);
-  eim_bivquant_hl.resize(promispairs.size(), 0);
-  eim_bivquant_hh.resize(promispairs.size(), 0);
-	   }
-	   }
-// Compute EIM
-  for (size_t i = 0; i < num_trees; ++i) {
-    trees[i]->computePermutationImportanceMultivariate(eim_univ, eim_bivpooled, eim_bivqual, 
-	  eim_bivquant_ll, eim_bivquant_lh, eim_bivquant_hl, eim_bivquant_hh);
-    progress++;
-    showProgress("Computing EIM values..", start_time, lap_time);
-  }
-#else
   progress = 0;
 #ifdef R_BUILD
   aborted = false;
@@ -858,8 +753,6 @@ if (eim_mode != 5) {
 		eim_bivquant_lh_threads.clear();
 		eim_bivquant_hl_threads.clear();
 		eim_bivquant_hh_threads.clear();
-	
-#endif
 
   for (size_t i = 0; i < eim_univ.size(); ++i) {
     eim_univ[i] /= num_trees;
@@ -889,7 +782,6 @@ if (eim_mode != 5) {
   
 }
 
-#ifndef OLD_WIN_R_BUILD
 void Forest::growTreesInThread(uint thread_idx, std::vector<double>* variable_importance) {
   if (thread_ranges.size() > thread_idx + 1) {
     for (size_t i = thread_ranges[thread_idx]; i < thread_ranges[thread_idx + 1]; ++i) {
@@ -1018,7 +910,6 @@ void Forest::computeTreePermutationImportanceMultivariateInThread(uint thread_id
     }
   }
 }
-#endif
 
 // #nocov start
 void Forest::loadFromFile(std::string filename) {
@@ -1166,27 +1057,6 @@ void Forest::setAlwaysSplitVariables(const std::vector<std::string>& always_spli
   }
 }
 
-#ifdef OLD_WIN_R_BUILD
-void Forest::showProgress(std::string operation, clock_t start_time, clock_t& lap_time) {
-
-// Check for user interrupt
-  if (checkInterrupt()) {
-    throw std::runtime_error("User interrupt.");
-  }
-
-  double elapsed_time = (clock() - lap_time) / CLOCKS_PER_SEC;
-  if (elapsed_time > STATUS_INTERVAL) {
-    double relative_progress = (double) progress / (double) num_trees;
-    double time_from_start = (clock() - start_time) / CLOCKS_PER_SEC;
-    uint remaining_time = (1 / relative_progress - 1) * time_from_start;
-    if (verbose_out) {
-      *verbose_out << operation << " Progress: " << round(100 * relative_progress)
-      << "%. Estimated remaining time: " << beautifyTime(remaining_time) << "." << std::endl;
-    }
-    lap_time = clock();
-  }
-}
-#else
 void Forest::showProgress(std::string operation, size_t max_progress) {
   using std::chrono::steady_clock;
   using std::chrono::duration_cast;
@@ -1223,6 +1093,5 @@ void Forest::showProgress(std::string operation, size_t max_progress) {
     }
   }
 }
-#endif
 
 } // namespace diversityForest

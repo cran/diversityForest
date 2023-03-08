@@ -40,7 +40,7 @@ void ForestClassification::loadForest(size_t dependent_varID, size_t num_trees,
   trees.reserve(num_trees);
   for (size_t i = 0; i < num_trees; ++i) {
     trees.push_back(
-        make_unique<TreeClassification>(forest_child_nodeIDs[i], forest_split_varIDs[i], forest_split_values[i], forest_split_types[i], forest_split_multvarIDs[i], 
+        std::make_unique<TreeClassification>(forest_child_nodeIDs[i], forest_split_varIDs[i], forest_split_values[i], forest_split_types[i], forest_split_multvarIDs[i], 
 	    forest_split_directs[i], forest_split_multvalues[i], &this->class_values, &response_classIDs));
   }
 
@@ -112,7 +112,7 @@ void ForestClassification::growInternal() {
   trees.reserve(num_trees);
   for (size_t i = 0; i < num_trees; ++i) {
     trees.push_back(
-        make_unique<TreeClassification>(&class_values, &response_classIDs, &sampleIDs_per_class, &class_weights));
+        std::make_unique<TreeClassification>(&class_values, &response_classIDs, &sampleIDs_per_class, &class_weights));
   }
 }
 
@@ -349,7 +349,7 @@ void ForestClassification::loadFromFileInternal(std::ifstream& infile) {
 
     // Create tree
     trees.push_back(
-        make_unique<TreeClassification>(child_nodeIDs, split_varIDs, split_values, split_types, split_multvarIDs, split_directs, split_multvalues, &class_values, &response_classIDs));
+        std::make_unique<TreeClassification>(child_nodeIDs, split_varIDs, split_values, split_types, split_multvarIDs, split_directs, split_multvalues, &class_values, &response_classIDs));
   }
 }
 

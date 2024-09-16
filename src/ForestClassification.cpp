@@ -29,6 +29,8 @@ void ForestClassification::loadForest(size_t dependent_varID, size_t num_trees,
     std::vector<std::vector<size_t>>& forest_split_varIDs, std::vector<std::vector<double>>& forest_split_values, 
 	std::vector<std::vector<size_t>>& forest_split_types, std::vector<std::vector<std::vector<size_t>>>& forest_split_multvarIDs, 
 	std::vector<std::vector<std::vector<std::vector<bool>>>>& forest_split_directs, std::vector<std::vector<std::vector<std::vector<double>>>>& forest_split_multvalues,
+	std::vector<std::vector<std::vector<size_t>> >& forest_child_muwnodeIDs,
+	std::vector<std::vector<std::vector<double>>>& forest_split_muwvalues, 
     std::vector<double>& class_values, std::vector<bool>& is_ordered_variable) {
 
   this->dependent_varID = dependent_varID;
@@ -36,12 +38,14 @@ void ForestClassification::loadForest(size_t dependent_varID, size_t num_trees,
   this->class_values = class_values;
   data->setIsOrderedVariable(is_ordered_variable);
 
+  std::vector<size_t> empty_muw_inds;
+  
   // Create trees
   trees.reserve(num_trees);
   for (size_t i = 0; i < num_trees; ++i) {
     trees.push_back(
         std::make_unique<TreeClassification>(forest_child_nodeIDs[i], forest_split_varIDs[i], forest_split_values[i], forest_split_types[i], forest_split_multvarIDs[i], 
-	    forest_split_directs[i], forest_split_multvalues[i], &this->class_values, &response_classIDs));
+	    forest_split_directs[i], forest_split_multvalues[i], forest_child_muwnodeIDs[i], forest_split_muwvalues[i], empty_muw_inds, &this->class_values, &response_classIDs));
   }
 
   // Create thread ranges
@@ -140,6 +144,9 @@ void ForestClassification::predictInternal(size_t sample_idx) {
 		if (divfortype == 2) {
           predictions[0][sample_idx][tree_idx] = getTreePredictionMultivariate(tree_idx, sample_idx);
 		}
+		if (divfortype == 3) {
+          predictions[0][sample_idx][tree_idx] = getTreePredictionMuw(tree_idx, sample_idx);
+		}
       }
     }
   } else {
@@ -151,6 +158,9 @@ void ForestClassification::predictInternal(size_t sample_idx) {
 	  }
 	  if (divfortype == 2) {
 		++class_count[getTreePredictionMultivariate(tree_idx, sample_idx)];
+	  }
+	  if (divfortype == 3) {
+		++class_count[getTreePredictionMuw(tree_idx, sample_idx)];
 	  }
     }
     predictions[0][0][sample_idx] = mostFrequentValue(class_count, random_number_generator);
@@ -175,6 +185,9 @@ void ForestClassification::computePredictionErrorInternal() {
 	  }
 	  if (divfortype == 2) {
         ++class_counts[sampleID][getTreePredictionMultivariate(tree_idx, sample_idx)];
+	  }
+	  if (divfortype == 3) {
+        ++class_counts[sampleID][getTreePredictionMuw(tree_idx, sample_idx)];
 	  }
     }
   }
@@ -208,92 +221,6 @@ void ForestClassification::computePredictionErrorInternal() {
 }
 
 // #nocov start
-void ForestClassification::writeOutputInternal() {
-  if (verbose_out) {
-    *verbose_out << "Tree type:                         " << "Classification" << std::endl;
-  }
-}
-
-void ForestClassification::writeConfusionFile() {
-
-  // Open confusion file for writing
-  std::string filename = output_prefix + ".confusion";
-  std::ofstream outfile;
-  outfile.open(filename, std::ios::out);
-  if (!outfile.good()) {
-    throw std::runtime_error("Could not write to confusion file: " + filename + ".");
-  }
-
-  // Write confusion to file
-  outfile << "Overall OOB prediction error (Fraction missclassified): " << overall_prediction_error << std::endl;
-  outfile << std::endl;
-  outfile << "Class specific prediction errors:" << std::endl;
-  outfile << "           ";
-  for (auto& class_value : class_values) {
-    outfile << "     " << class_value;
-  }
-  outfile << std::endl;
-  for (auto& predicted_value : class_values) {
-    outfile << "predicted " << predicted_value << "     ";
-    for (auto& real_value : class_values) {
-      size_t value = classification_table[std::make_pair(real_value, predicted_value)];
-      outfile << value;
-      if (value < 10) {
-        outfile << "     ";
-      } else if (value < 100) {
-        outfile << "    ";
-      } else if (value < 1000) {
-        outfile << "   ";
-      } else if (value < 10000) {
-        outfile << "  ";
-      } else if (value < 100000) {
-        outfile << " ";
-      }
-    }
-    outfile << std::endl;
-  }
-
-  outfile.close();
-  if (verbose_out)
-    *verbose_out << "Saved confusion matrix to file " << filename << "." << std::endl;
-}
-
-void ForestClassification::writePredictionFile() {
-
-  // Open prediction file for writing
-  std::string filename = output_prefix + ".prediction";
-  std::ofstream outfile;
-  outfile.open(filename, std::ios::out);
-  if (!outfile.good()) {
-    throw std::runtime_error("Could not write to prediction file: " + filename + ".");
-  }
-
-  // Write
-  outfile << "Predictions: " << std::endl;
-  if (predict_all) {
-    for (size_t k = 0; k < num_trees; ++k) {
-      outfile << "Tree " << k << ":" << std::endl;
-      for (size_t i = 0; i < predictions.size(); ++i) {
-        for (size_t j = 0; j < predictions[i].size(); ++j) {
-          outfile << predictions[i][j][k] << std::endl;
-        }
-      }
-      outfile << std::endl;
-    }
-  } else {
-    for (size_t i = 0; i < predictions.size(); ++i) {
-      for (size_t j = 0; j < predictions[i].size(); ++j) {
-        for (size_t k = 0; k < predictions[i][j].size(); ++k) {
-          outfile << predictions[i][j][k] << std::endl;
-        }
-      }
-    }
-  }
-
-  if (verbose_out)
-    *verbose_out << "Saved predictions to file " << filename << "." << std::endl;
-}
-
 void ForestClassification::saveToFileInternal(std::ofstream& outfile) {
 
   // Write num_variables
@@ -307,52 +234,6 @@ void ForestClassification::saveToFileInternal(std::ofstream& outfile) {
   saveVector1D(class_values, outfile);
 }
 
-void ForestClassification::loadFromFileInternal(std::ifstream& infile) {
-
-  // Read number of variables
-  size_t num_variables_saved;
-  infile.read((char*) &num_variables_saved, sizeof(num_variables_saved));
-
-  // Read treetype
-  TreeType treetype;
-  infile.read((char*) &treetype, sizeof(treetype));
-  if (treetype != TREE_CLASSIFICATION) {
-    throw std::runtime_error("Wrong treetype. Loaded file is not a classification forest.");
-  }
-
-  // Read class_values
-  readVector1D(class_values, infile);
-
-  for (size_t i = 0; i < num_trees; ++i) {
-
-    // Read data
-    std::vector<std::vector<size_t>> child_nodeIDs;
-    readVector2D(child_nodeIDs, infile);
-    std::vector<size_t> split_varIDs;
-    readVector1D(split_varIDs, infile);
-    std::vector<double> split_values;
-    readVector1D(split_values, infile);
-	
-	std::vector<size_t> split_types;
-    std::vector<std::vector<size_t>> split_multvarIDs;
-    std::vector<std::vector<std::vector<bool>>> split_directs;
-    std::vector<std::vector<std::vector<double>>> split_multvalues;
-	
-    // If dependent variable not in test data, change variable IDs accordingly
-    if (num_variables_saved > num_variables) {
-      for (auto& varID : split_varIDs) {
-        if (varID >= dependent_varID) {
-          --varID;
-        }
-      }
-    }
-
-    // Create tree
-    trees.push_back(
-        std::make_unique<TreeClassification>(child_nodeIDs, split_varIDs, split_values, split_types, split_multvarIDs, split_directs, split_multvalues, &class_values, &response_classIDs));
-  }
-}
-
 double ForestClassification::getTreePrediction(size_t tree_idx, size_t sample_idx) const {
   const auto& tree = dynamic_cast<const TreeClassification&>(*trees[tree_idx]);
   return tree.getPrediction(sample_idx);
@@ -363,9 +244,131 @@ double ForestClassification::getTreePredictionMultivariate(size_t tree_idx, size
   return tree.getPredictionMultivariate(sample_idx);
 }
 
+double ForestClassification::getTreePredictionMuw(size_t tree_idx, size_t sample_idx) const {
+  const auto& tree = dynamic_cast<const TreeClassification&>(*trees[tree_idx]);
+  return tree.getPredictionMuw(sample_idx);
+}
+
 size_t ForestClassification::getTreePredictionTerminalNodeID(size_t tree_idx, size_t sample_idx) const {
   const auto& tree = dynamic_cast<const TreeClassification&>(*trees[tree_idx]);
   return tree.getPredictionTerminalNodeID(sample_idx);
+}
+
+// Multi Forests: Compute variable importance.
+void ForestClassification::computeImportanceMuw() {
+
+  // Compute EIM values in multiple threads
+  progress = 0;
+#ifdef R_BUILD
+  aborted = false;
+  aborted_threads = 0;
+#endif
+
+  std::vector<std::thread> threads;
+  threads.reserve(num_threads);
+
+  // Initialize importance
+  std::vector<std::vector<double>> var_imp_multiway_threads(num_threads);
+  std::vector<std::vector<double>> var_imp_discr_threads(num_threads);
+
+  // Compute importance
+  for (uint i = 0; i < num_threads; ++i)
+  {    
+    if (importance_mode == MUWIMP_MULTIWAY || importance_mode == MUWIMP_BOTH)
+    {
+       var_imp_multiway_threads[i].resize(metricind.size(), 0);
+    }
+    if (importance_mode == MUWIMP_DISCR || importance_mode == MUWIMP_BOTH)
+    {
+       var_imp_discr_threads[i].resize(num_independent_variables, 0);
+    }
+    threads.emplace_back(&ForestClassification::computeTreeImportanceMuwInThread, this, i,
+                         std::ref(var_imp_multiway_threads[i]), std::ref(var_imp_discr_threads[i]));
+  }
+  showProgress("Computing variable importance..", num_trees);
+  for (auto &thread : threads)
+  {
+    thread.join();
+  }
+  
+#ifdef R_BUILD
+  if (aborted_threads > 0)
+  {
+    throw std::runtime_error("User interrupt.");
+  }
+#endif
+
+  // Sum thread importances
+  if (importance_mode == MUWIMP_MULTIWAY || importance_mode == MUWIMP_BOTH)
+  {
+	  var_imp_multiway.resize(metricind.size(), 0);
+  for (size_t i = 0; i < metricind.size(); ++i)
+  {
+    for (uint j = 0; j < num_threads; ++j)
+    {
+      var_imp_multiway[i] += var_imp_multiway_threads[j][i];
+    }
+  }  
+  }
+  
+    if (importance_mode == MUWIMP_DISCR || importance_mode == MUWIMP_BOTH)
+  {
+	  var_imp_discr.resize(num_independent_variables, 0);
+  for (size_t i = 0; i < num_independent_variables; ++i)
+  {
+    for (uint j = 0; j < num_threads; ++j)
+    {
+      var_imp_discr[i] += var_imp_discr_threads[j][i];
+    }
+  }  
+  }
+
+  var_imp_multiway_threads.clear();
+  var_imp_discr_threads.clear();
+
+  if (importance_mode == MUWIMP_MULTIWAY || importance_mode == MUWIMP_BOTH)
+  {
+  for (size_t i = 0; i < var_imp_multiway.size(); ++i)
+  {
+    var_imp_multiway[i] /= num_trees;
+  }
+  }
+
+  if (importance_mode == MUWIMP_DISCR || importance_mode == MUWIMP_BOTH)
+  {
+  for (size_t i = 0; i < var_imp_discr.size(); ++i)
+  {
+    var_imp_discr[i] /= num_trees;
+  }
+  }
+
+}
+
+// Multi Forests: Compute variable importance in one thread.
+void ForestClassification::computeTreeImportanceMuwInThread(uint thread_idx, std::vector<double>& importance_multiway,
+     std::vector<double>& importance_discr) {
+  if (thread_ranges.size() > thread_idx + 1) {
+    for (size_t i = thread_ranges[thread_idx]; i < thread_ranges[thread_idx + 1]; ++i) {
+      if (auto treeClassPtr = dynamic_cast<TreeClassification*>(trees[i].get())) {
+        treeClassPtr->computeImportanceMuw(importance_multiway, importance_discr);
+      }
+
+      // Check for user interrupt
+#ifdef R_BUILD
+      if (aborted) {
+        std::unique_lock<std::mutex> lock(mutex);
+        ++aborted_threads;
+        condition_variable.notify_one();
+        return;
+      }
+#endif
+
+      // Increase progress by 1 tree
+      std::unique_lock<std::mutex> lock(mutex);
+      ++progress;
+      condition_variable.notify_one();
+    }
+  }
 }
 
 // #nocov end

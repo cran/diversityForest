@@ -7,7 +7,7 @@
 A data frame with 101 observations, 16 covariates and one binary outcome variable
 }
 \source{
-OpenML: data.name: zoo, data.id: 965, link: \url{https://www.openml.org/d/965/}
+OpenML: data.name: zoo, data.id: 965, link: \url{https://www.openml.org/d/965/} (Accessed: 29/08/2024)
 }
 \description{
 This data set describes 101 different biological species using 16 simple attributes,
@@ -57,6 +57,6 @@ head(zoo)
 \references{
 \itemize{
   \item Vanschoren, J., van Rijn, J. N., Bischl, B., Torgo, L. (2013). OpenML: networked science in machine learning. SIGKDD Explorations 15(2):49-60, <\doi{10.1145/2641190.2641198}>.
-  \item Dua, D., Graff, C. (2019) UCI Machine Learning Repository. Irvine, CA: University of California, School of Information and Computer Science. \url{https://archive.ics.uci.edu/ml/}.
+  \item Dua, D., Graff, C. (2019). UCI Machine Learning Repository. Irvine, CA: University of California, School of Information and Computer Science. \url{https://archive.ics.uci.edu/ml/}.
   }
 }

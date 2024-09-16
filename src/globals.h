@@ -47,7 +47,10 @@ enum ImportanceMode {
   IMP_PERM_BREIMAN = 2,
   IMP_PERM_LIAW = 4,
   IMP_PERM_RAW = 3,
-  IMP_GINI_CORRECTED = 5
+  IMP_GINI_CORRECTED = 5,
+  MUWIMP_BOTH = 6,
+  MUWIMP_MULTIWAY = 7,
+  MUWIMP_DISCR = 8
 };
 const uint MAX_IMP_MODE = 5;
 

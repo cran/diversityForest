@@ -88,6 +88,28 @@ print.interactionfor <- function(x, ...) {
   }
 }
 
+# Print contents of \code{multifor} object.
+#' @author Roman Hornung, Marvin N. Wright
+#' @export
+print.multifor <- function(x, ...) {
+  cat("multifor result\n\n")
+  cat("Variable importance mode:        ", x$importance.mode, "\n")
+  cat("Call:\n", deparse(x$call), "\n\n")
+  cat("Type:                            ", x$treetype, "\n")
+  cat("Number of trees:                 ", x$num.trees, "\n")
+  cat("Sample size:                     ", x$num.samples, "\n")
+  cat("Number of independent variables: ", x$num.independent.variables, "\n")
+  cat("Mtry:                            ", x$mtry, "\n")
+  cat("Target node size:                ", x$min.node.size, "\n")
+  if (x$treetype == "Classification") {
+    cat("OOB prediction error:            ", sprintf("%1.2f %%", 100*x$prediction.error), "\n")
+  } else if (x$treetype == "Probability estimation") {
+    cat("OOB prediction error (Brier s.): ", x$prediction.error, "\n")
+  }
+}
+
+
+
 # Print contents of \code{divfor.forest} object.
 #' @author Marvin N. Wright
 #' @export
@@ -112,6 +134,16 @@ print.interactionfor.forest <- function(x, ...) {
   }
 }
 
+# Print contents of \code{multifor.forest} object.
+#' @author Marvin N. Wright
+#' @export
+print.multifor.forest <- function(x, ...) {
+  cat("multifor forest object\n\n")
+  cat("Type:                         ", x$treetype, "\n")
+  cat("Number of trees:              ", x$num.trees, "\n")
+}
+
+
 # Print contents of \code{divfor.prediction} object.
 #' @author Marvin N. Wright
 #' @export
@@ -125,7 +157,7 @@ print.divfor.prediction <- function(x, ...) {
   }
 }
 
-# Print contents of \code{divfor.prediction} object.
+# Print contents of \code{interactionfor.prediction} object.
 #' @author Marvin N. Wright
 #' @export
 print.interactionfor.prediction <- function(x, ...) {
@@ -138,11 +170,23 @@ print.interactionfor.prediction <- function(x, ...) {
   }
 }
 
+# Print contents of \code{multifor.prediction} object.
+#' @author Marvin N. Wright
+#' @export
+print.multifor.prediction <- function(x, ...) {
+  cat("multifor prediction\n\n")
+  cat("Type:                            ", x$treetype, "\n")
+  cat("Sample size:                     ", x$num.samples, "\n")
+  cat("Number of independent variables: ", x$num.independent.variables, "\n")
+}
+
+#' @export
 str.divfor.forest <- function(object, max.level = 2, ...) {
   class(object) <- "list"
   str(object, max.level = max.level, ...)
 }
 
+#' @export
 str.divfor <- function(object, max.level = 2, ...) {
   class(object) <- "list"
   str(object, max.level = max.level, ...)

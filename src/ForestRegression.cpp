@@ -164,66 +164,6 @@ void ForestRegression::computePredictionErrorInternal() {
 }
 
 // #nocov start
-void ForestRegression::writeOutputInternal() {
-  if (verbose_out) {
-    *verbose_out << "Tree type:                         " << "Regression" << std::endl;
-  }
-}
-
-void ForestRegression::writeConfusionFile() {
-
-// Open confusion file for writing
-  std::string filename = output_prefix + ".confusion";
-  std::ofstream outfile;
-  outfile.open(filename, std::ios::out);
-  if (!outfile.good()) {
-    throw std::runtime_error("Could not write to confusion file: " + filename + ".");
-  }
-
-// Write confusion to file
-  outfile << "Overall OOB prediction error (MSE): " << overall_prediction_error << std::endl;
-
-  outfile.close();
-  if (verbose_out)
-    *verbose_out << "Saved prediction error to file " << filename << "." << std::endl;
-}
-
-void ForestRegression::writePredictionFile() {
-
-// Open prediction file for writing
-  std::string filename = output_prefix + ".prediction";
-  std::ofstream outfile;
-  outfile.open(filename, std::ios::out);
-  if (!outfile.good()) {
-    throw std::runtime_error("Could not write to prediction file: " + filename + ".");
-  }
-
-  // Write
-  outfile << "Predictions: " << std::endl;
-  if (predict_all) {
-    for (size_t k = 0; k < num_trees; ++k) {
-      outfile << "Tree " << k << ":" << std::endl;
-      for (size_t i = 0; i < predictions.size(); ++i) {
-        for (size_t j = 0; j < predictions[i].size(); ++j) {
-          outfile << predictions[i][j][k] << std::endl;
-        }
-      }
-      outfile << std::endl;
-    }
-  } else {
-    for (size_t i = 0; i < predictions.size(); ++i) {
-      for (size_t j = 0; j < predictions[i].size(); ++j) {
-        for (size_t k = 0; k < predictions[i][j].size(); ++k) {
-          outfile << predictions[i][j][k] << std::endl;
-        }
-      }
-    }
-  }
-
-  if (verbose_out)
-    *verbose_out << "Saved predictions to file " << filename << "." << std::endl;
-}
-
 void ForestRegression::saveToFileInternal(std::ofstream& outfile) {
 
 // Write num_variables
@@ -232,48 +172,6 @@ void ForestRegression::saveToFileInternal(std::ofstream& outfile) {
 // Write treetype
   TreeType treetype = TREE_REGRESSION;
   outfile.write((char*) &treetype, sizeof(treetype));
-}
-
-void ForestRegression::loadFromFileInternal(std::ifstream& infile) {
-
-// Read number of variables
-  size_t num_variables_saved;
-  infile.read((char*) &num_variables_saved, sizeof(num_variables_saved));
-
-// Read treetype
-  TreeType treetype;
-  infile.read((char*) &treetype, sizeof(treetype));
-  if (treetype != TREE_REGRESSION) {
-    throw std::runtime_error("Wrong treetype. Loaded file is not a regression forest.");
-  }
-
-  for (size_t i = 0; i < num_trees; ++i) {
-
-    // Read data
-    std::vector<std::vector<size_t>> child_nodeIDs;
-    readVector2D(child_nodeIDs, infile);
-    std::vector<size_t> split_varIDs;
-    readVector1D(split_varIDs, infile);
-    std::vector<double> split_values;
-    readVector1D(split_values, infile);
-
-	std::vector<size_t> split_types;
-    std::vector<std::vector<size_t>> split_multvarIDs;
-    std::vector<std::vector<std::vector<bool>>> split_directs;
-    std::vector<std::vector<std::vector<double>>> split_multvalues;
-
-    // If dependent variable not in test data, change variable IDs accordingly
-    if (num_variables_saved > num_variables) {
-      for (auto& varID : split_varIDs) {
-        if (varID >= dependent_varID) {
-          --varID;
-        }
-      }
-    }
-
-    // Create tree
-    trees.push_back(std::make_unique<TreeRegression>(child_nodeIDs, split_varIDs, split_values, split_types, split_multvarIDs, split_directs, split_multvalues));
-  }
 }
 
 double ForestRegression::getTreePrediction(size_t tree_idx, size_t sample_idx) const {

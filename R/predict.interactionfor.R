@@ -126,6 +126,7 @@ predict.interactionfor <- function(object, data = NULL, predict.all = FALSE,
 }
 
 # Author: Marvin N. Wright, Roman Hornung
+#' @export
 predict.interactionfor.forest <- function(object, data, predict.all = FALSE,
                                   num.trees = object$num.trees, 
                                   type = "response", se.method = "infjack",
@@ -381,7 +382,8 @@ predict.interactionfor.forest <- function(object, data, predict.all = FALSE,
                       case.weights, use.case.weights, class.weights, 
                       predict.all, keep.inbag, sample.fraction, alpha, minprop, holdout, 
                       prediction.type, num.random.splits, sparse.data, use.sparse.data,
-                      order.snps, oob.error, max.depth, inbag, use.inbag, nsplits, npairs, proptry, divfortype=2, promispairs=list(0,0), eim.mode) ## asdf
+                      order.snps, oob.error, max.depth, inbag, use.inbag, nsplits, npairs, proptry, divfortype=2, 
+					  promispairs=list(0,0), eim.mode, metricind=numeric(0)) ## asdf
 
   if (length(result) == 0) {
     stop("User interrupt or internal error.")

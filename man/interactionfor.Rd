@@ -313,7 +313,7 @@ zoo.test <- zoo[-train.idx, ]
 
 # Construct interaction forest on training data:
 # NOTE again: num.trees = 20 is specified too small for practical purposes.
-modelcattrain <- interactionfor(dependent.variable.name = "type", data = zoo, 
+modelcattrain <- interactionfor(dependent.variable.name = "type", data = zoo.train, 
                                 importance = "none", num.trees = 20)
 # NOTE: Because we are only interested in prediction here, we do not
 # calculate EIM values (by setting importance = "none"), because this

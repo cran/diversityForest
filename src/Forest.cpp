@@ -36,108 +36,6 @@ Forest::Forest() :
     NAN), importance_mode(DEFAULT_IMPORTANCE_MODE), progress(0) {  // asdf
 }
 
-// #nocov start
-std::unique_ptr<Data> load_data_from_file(const std::string& data_path, const MemoryMode memory_mode,
-    std::ostream* verbose_out = nullptr) {
-  std::unique_ptr<Data> result { };
-  switch (memory_mode) {
-  case MEM_DOUBLE:
-    result = std::make_unique<DataDouble>();
-    break;
-  case MEM_FLOAT:
-    result = std::make_unique<DataFloat>();
-    break;
-  case MEM_CHAR:
-    result = std::make_unique<DataChar>();
-    break;
-  }
-
-  if (verbose_out)
-    *verbose_out << "Loading input file: " << data_path << "." << std::endl;
-  bool found_rounding_error = result->loadFromFile(data_path);
-  if (found_rounding_error && verbose_out) {
-    *verbose_out << "Warning: Rounding or Integer overflow occurred. Use FLOAT or DOUBLE precision to avoid this."
-        << std::endl;
-  }
-  return result;
-}
-
-void Forest::initCpp(std::string dependent_variable_name, MemoryMode memory_mode, std::string input_file, uint mtry,
-    std::string output_prefix, uint num_trees, std::ostream* verbose_out, uint seed, uint num_threads,
-    std::string load_forest_filename, ImportanceMode importance_mode, uint min_node_size,
-    std::string split_select_weights_file, const std::vector<std::string>& always_split_variable_names,
-    std::string status_variable_name, bool sample_with_replacement,
-    const std::vector<std::string>& unordered_variable_names, bool memory_saving_splitting, SplitRule splitrule,
-    std::string case_weights_file, bool predict_all, double sample_fraction, uint nsplits, uint npairs, double proptry, double alpha, double minprop, bool holdout,
-    PredictionType prediction_type, uint num_random_splits, uint max_depth) { // asdf
-
-  this->verbose_out = verbose_out;
-
-  // Set prediction mode
-  bool prediction_mode = false;
-  if (!load_forest_filename.empty()) {
-    prediction_mode = true;
-  }
-
-  // Sample fraction to vector
-  std::vector<double> sample_fraction_vector = { sample_fraction };
-
-  // Call other init function
-  init(dependent_variable_name, memory_mode, load_data_from_file(input_file, memory_mode, verbose_out), mtry,
-      output_prefix, num_trees, seed, num_threads, importance_mode, min_node_size, status_variable_name,
-      prediction_mode, sample_with_replacement, unordered_variable_names, memory_saving_splitting, splitrule,
-      predict_all, sample_fraction_vector, nsplits, npairs, proptry, alpha, minprop, holdout, prediction_type, num_random_splits, false,
-      max_depth, promispairs, eim_mode, divfortype);  // asdf
-
-  if (prediction_mode) {
-    loadFromFile(load_forest_filename);
-  }
-  // Set variables to be always considered for splitting
-  if (!always_split_variable_names.empty()) {
-    setAlwaysSplitVariables(always_split_variable_names);
-  }
-
-  // TODO: Read 2d weights for tree-wise split select weights
-  // Load split select weights from file
-  if (!split_select_weights_file.empty()) {
-    std::vector<std::vector<double>> split_select_weights;
-    split_select_weights.resize(1);
-    loadDoubleVectorFromFile(split_select_weights[0], split_select_weights_file);
-    if (split_select_weights[0].size() != num_variables - 1) {
-      throw std::runtime_error("Number of split select weights is not equal to number of independent variables.");
-    }
-    setSplitWeightVector(split_select_weights);
-  }
-
-  // Load case weights from file
-  if (!case_weights_file.empty()) {
-    loadDoubleVectorFromFile(case_weights, case_weights_file);
-    if (case_weights.size() != num_samples) {
-      throw std::runtime_error("Number of case weights is not equal to number of samples.");
-    }
-  }
-
-  // Sample from non-zero weights in holdout mode
-  if (holdout && !case_weights.empty()) {
-    size_t nonzero_weights = 0;
-    for (auto& weight : case_weights) {
-      if (weight > 0) {
-        ++nonzero_weights;
-      }
-    }
-    this->sample_fraction[0] = this->sample_fraction[0] * ((double) nonzero_weights / (double) num_samples);
-  }
-
-  // Check if all catvars are coded in integers starting at 1
-  if (!unordered_variable_names.empty()) {
-    std::string error_message = checkUnorderedVariables(*data, unordered_variable_names);
-    if (!error_message.empty()) {
-      throw std::runtime_error(error_message);
-    }
-  }
-}
-// #nocov end
-
 void Forest::initR(std::string dependent_variable_name, std::unique_ptr<Data> input_data, uint mtry, uint num_trees,
     std::ostream* verbose_out, uint seed, uint num_threads, ImportanceMode importance_mode, uint min_node_size,
     std::vector<std::vector<double>>& split_select_weights, const std::vector<std::string>& always_split_variable_names,
@@ -145,7 +43,7 @@ void Forest::initR(std::string dependent_variable_name, std::unique_ptr<Data> in
     const std::vector<std::string>& unordered_variable_names, bool memory_saving_splitting, SplitRule splitrule,
     std::vector<double>& case_weights, std::vector<std::vector<size_t>>& manual_inbag, bool predict_all,
     bool keep_inbag, std::vector<double>& sample_fraction, uint nsplits, uint npairs, double proptry, double alpha, double minprop, bool holdout,
-    PredictionType prediction_type, uint num_random_splits, bool order_snps, uint max_depth, std::vector<std::vector<size_t>>& promispairs, uint& eim_mode, uint& divfortype) { // asdf
+    PredictionType prediction_type, uint num_random_splits, bool order_snps, uint max_depth, std::vector<std::vector<size_t>>& promispairs, uint& eim_mode, uint& divfortype, std::vector<size_t>& metricind) {
 
   this->verbose_out = verbose_out;
 
@@ -153,7 +51,7 @@ void Forest::initR(std::string dependent_variable_name, std::unique_ptr<Data> in
   init(dependent_variable_name, MEM_DOUBLE, std::move(input_data), mtry, "", num_trees, seed, num_threads,
       importance_mode, min_node_size, status_variable_name, prediction_mode, sample_with_replacement,
       unordered_variable_names, memory_saving_splitting, splitrule, predict_all, sample_fraction, nsplits, npairs, proptry, alpha, minprop,
-      holdout, prediction_type, num_random_splits, order_snps, max_depth, promispairs, eim_mode, divfortype); // asdf
+      holdout, prediction_type, num_random_splits, order_snps, max_depth, promispairs, eim_mode, divfortype, metricind);
 
   // Set variables to be always considered for splitting
   if (!always_split_variable_names.empty()) {
@@ -187,7 +85,7 @@ void Forest::init(std::string dependent_variable_name, MemoryMode memory_mode, s
     uint min_node_size, std::string status_variable_name, bool prediction_mode, bool sample_with_replacement,
     const std::vector<std::string>& unordered_variable_names, bool memory_saving_splitting, SplitRule splitrule,
     bool predict_all, std::vector<double>& sample_fraction, uint nsplits, uint npairs, double proptry, double alpha, double minprop, bool holdout,
-    PredictionType prediction_type, uint num_random_splits, bool order_snps, uint max_depth, std::vector<std::vector<size_t>>& promispairs, uint eim_mode, uint divfortype) { // asdf
+    PredictionType prediction_type, uint num_random_splits, bool order_snps, uint max_depth, std::vector<std::vector<size_t>>& promispairs, uint eim_mode, uint divfortype, std::vector<size_t>& metricind) {
 
   // Initialize data with memmode
   this->data = std::move(input_data);
@@ -233,6 +131,7 @@ void Forest::init(std::string dependent_variable_name, MemoryMode memory_mode, s
   this->promispairs = promispairs;
   this->eim_mode = eim_mode;
   this->divfortype = divfortype;
+  this->metricind = metricind;
   
   // Set number of samples and variables
   num_samples = data->getNumRows();
@@ -303,7 +202,7 @@ void Forest::run(bool verbose, bool compute_oob_error) {
       computePredictionError();
     }
 
-    if (importance_mode == IMP_PERM_BREIMAN || importance_mode == IMP_PERM_LIAW || importance_mode == IMP_PERM_RAW) {
+    if (importance_mode == IMP_PERM_BREIMAN || importance_mode == IMP_PERM_LIAW || importance_mode == IMP_PERM_RAW || importance_mode == MUWIMP_BOTH || importance_mode == MUWIMP_MULTIWAY || importance_mode == MUWIMP_DISCR) {
       if (verbose && verbose_out) {
         *verbose_out << "Computing permutation variable importance .." << std::endl;
       }
@@ -313,84 +212,14 @@ void Forest::run(bool verbose, bool compute_oob_error) {
 	  if (divfortype == 2) {
         computePermutationImportanceMultivariate();
 	  }
+	  if (divfortype == 3) {
+        computeImportanceMuw();
+	  }
     }
   }
 }
 
 // #nocov start
-void Forest::writeOutput() {
-
-  if (verbose_out)
-    *verbose_out << std::endl;
-  writeOutputInternal();
-  if (verbose_out) {
-    *verbose_out << "Dependent variable name:           " << data->getVariableNames()[dependent_varID] << std::endl;
-    *verbose_out << "Dependent variable ID:             " << dependent_varID << std::endl;
-    *verbose_out << "Number of trees:                   " << num_trees << std::endl;
-    *verbose_out << "Sample size:                       " << num_samples << std::endl;
-    *verbose_out << "Number of independent variables:   " << num_independent_variables << std::endl;
-    *verbose_out << "Mtry:                              " << mtry << std::endl;
-    *verbose_out << "Target node size:                  " << min_node_size << std::endl;
-    *verbose_out << "Variable importance mode:          " << importance_mode << std::endl;
-    *verbose_out << "Memory mode:                       " << memory_mode << std::endl;
-    *verbose_out << "Seed:                              " << seed << std::endl;
-    *verbose_out << "Number of threads:                 " << num_threads << std::endl;
-	*verbose_out << "Max ntriedsplits:                              " << nsplits << std::endl; // asdf
-	*verbose_out << "Npairs:                              " << npairs << std::endl; // asdf
-	*verbose_out << std::endl;
-  }
-
-  if (prediction_mode) {
-    writePredictionFile();
-  } else {
-    if (verbose_out) {
-      *verbose_out << "Overall OOB prediction error:      " << overall_prediction_error << std::endl;
-      *verbose_out << std::endl;
-    }
-
-    if (!split_select_weights.empty() && !split_select_weights[0].empty()) {
-      if (verbose_out) {
-        *verbose_out
-            << "Warning: Split select weights used. Variable importance measures are only comparable for variables with equal weights."
-            << std::endl;
-      }
-    }
-
-    if (importance_mode != IMP_NONE) {
-      writeImportanceFile();
-    }
-
-    writeConfusionFile();
-  }
-}
-
-void Forest::writeImportanceFile() {
-
-  // Open importance file for writing
-  std::string filename = output_prefix + ".importance";
-  std::ofstream importance_file;
-  importance_file.open(filename, std::ios::out);
-  if (!importance_file.good()) {
-    throw std::runtime_error("Could not write to importance file: " + filename + ".");
-  }
-
-  // Write importance to file
-  for (size_t i = 0; i < variable_importance.size(); ++i) {
-    size_t varID = i;
-    for (auto& skip : data->getNoSplitVariables()) {
-      if (varID >= skip) {
-        ++varID;
-      }
-    }
-    std::string variable_name = data->getVariableNames()[varID];
-    importance_file << variable_name << ": " << variable_importance[i] << std::endl;
-  }
-
-  importance_file.close();
-  if (verbose_out)
-    *verbose_out << "Saved variable importance to file " << filename << "." << std::endl;
-}
-
 void Forest::saveToFile() {
 
   // Open file for writing
@@ -461,7 +290,7 @@ void Forest::grow() {
     trees[i]->init(data.get(), mtry, nsplits, npairs, proptry, dependent_varID, num_samples, tree_seed, &deterministic_varIDs,
         &split_select_varIDs, tree_split_select_weights, importance_mode, min_node_size, sample_with_replacement,
         memory_saving_splitting, splitrule, &case_weights, tree_manual_inbag, keep_inbag, &sample_fraction, alpha,
-        minprop, holdout, num_random_splits, max_depth, &promispairs, eim_mode, divfortype); // asdf
+        minprop, holdout, num_random_splits, max_depth, &promispairs, eim_mode, divfortype, &metricind);
   }
 
 // Init variable importance
@@ -477,7 +306,7 @@ void Forest::grow() {
   std::vector<std::thread> threads;
   threads.reserve(num_threads);
 
-// Initailize importance per thread
+// Initialize importance per thread
   std::vector<std::vector<double>> variable_importance_threads(num_threads);
 
   for (uint i = 0; i < num_threads; ++i) {
@@ -609,7 +438,7 @@ void Forest::computePermutationImportance() {
   for (auto &thread : threads) {
     thread.join();
   }
-
+  
 #ifdef R_BUILD
   if (aborted_threads > 0) {
     throw std::runtime_error("User interrupt.");
@@ -635,7 +464,7 @@ void Forest::computePermutationImportance() {
     }
     variance_threads.clear();
   }
-
+  
   for (size_t i = 0; i < variable_importance.size(); ++i) {
     variable_importance[i] /= num_trees;
 
@@ -647,11 +476,13 @@ void Forest::computePermutationImportance() {
       }
     }
   }
+  
 }
 
-void Forest::computePermutationImportanceMultivariate() {
+void Forest::computePermutationImportanceMultivariate()
+{
 
-// Compute EIM values in multiple threads
+  // Compute EIM values in multiple threads
   progress = 0;
 #ifdef R_BUILD
   aborted = false;
@@ -661,7 +492,7 @@ void Forest::computePermutationImportanceMultivariate() {
   std::vector<std::thread> threads;
   threads.reserve(num_threads);
 
-// Initialize importance
+  // Initialize importance
   std::vector<std::vector<double>> eim_univ_threads(num_threads);
   std::vector<std::vector<double>> eim_bivpooled_threads(num_threads);
   std::vector<std::vector<double>> eim_bivqual_threads(num_threads);
@@ -670,116 +501,145 @@ void Forest::computePermutationImportanceMultivariate() {
   std::vector<std::vector<double>> eim_bivquant_hl_threads(num_threads);
   std::vector<std::vector<double>> eim_bivquant_hh_threads(num_threads);
 
-// Compute importance
-  for (uint i = 0; i < num_threads; ++i) {
+  // Compute importance
+  for (uint i = 0; i < num_threads; ++i)
+  {
     eim_univ_threads[i].resize(num_independent_variables, 0);
-	
-	  if (eim_mode != 5) {
-	   if (eim_mode == 1) {
-  eim_bivpooled_threads[i].resize(promispairs.size(), 0);
-	   }
-	   	   if (eim_mode == 2 || eim_mode == 3) {
-  eim_bivqual_threads[i].resize(promispairs.size(), 0);
-	   }
-	   	   if (eim_mode == 2 || eim_mode == 4) {
-  eim_bivquant_ll_threads[i].resize(promispairs.size(), 0);
-  eim_bivquant_lh_threads[i].resize(promispairs.size(), 0);
-  eim_bivquant_hl_threads[i].resize(promispairs.size(), 0);
-  eim_bivquant_hh_threads[i].resize(promispairs.size(), 0);
-	   }
-	   }
+
+    if (eim_mode != 5)
+    {
+      if (eim_mode == 1)
+      {
+        eim_bivpooled_threads[i].resize(promispairs.size(), 0);
+      }
+      if (eim_mode == 2 || eim_mode == 3)
+      {
+        eim_bivqual_threads[i].resize(promispairs.size(), 0);
+      }
+      if (eim_mode == 2 || eim_mode == 4)
+      {
+        eim_bivquant_ll_threads[i].resize(promispairs.size(), 0);
+        eim_bivquant_lh_threads[i].resize(promispairs.size(), 0);
+        eim_bivquant_hl_threads[i].resize(promispairs.size(), 0);
+        eim_bivquant_hh_threads[i].resize(promispairs.size(), 0);
+      }
+    }
     threads.emplace_back(&Forest::computeTreePermutationImportanceMultivariateInThread, this, i,
-        std::ref(eim_univ_threads[i]), std::ref(eim_bivpooled_threads[i]),
-		std::ref(eim_bivqual_threads[i]),
-		std::ref(eim_bivquant_ll_threads[i]), std::ref(eim_bivquant_lh_threads[i]), 
-		std::ref(eim_bivquant_hl_threads[i]), std::ref(eim_bivquant_hh_threads[i]));
+                         std::ref(eim_univ_threads[i]), std::ref(eim_bivpooled_threads[i]),
+                         std::ref(eim_bivqual_threads[i]),
+                         std::ref(eim_bivquant_ll_threads[i]), std::ref(eim_bivquant_lh_threads[i]),
+                         std::ref(eim_bivquant_hl_threads[i]), std::ref(eim_bivquant_hh_threads[i]));
   }
   showProgress("Computing EIM values..", num_trees);
-  for (auto &thread : threads) {
+  for (auto &thread : threads)
+  {
     thread.join();
   }
 
 #ifdef R_BUILD
-  if (aborted_threads > 0) {
+  if (aborted_threads > 0)
+  {
     throw std::runtime_error("User interrupt.");
   }
 #endif
 
-// Sum thread importances
+  // Sum thread importances
   eim_univ.resize(num_independent_variables, 0);
-   for (size_t i = 0; i < num_independent_variables; ++i) {
-    for (uint j = 0; j < num_threads; ++j) {
+  for (size_t i = 0; i < num_independent_variables; ++i)
+  {
+    for (uint j = 0; j < num_threads; ++j)
+    {
       eim_univ[i] += eim_univ_threads[j][i];
     }
   }
-	
-if (eim_mode != 5) {
-	   if (eim_mode == 1) {
-  eim_bivpooled.resize(promispairs.size(), 0);
-      for (size_t i = 0; i < promispairs.size(); ++i) {
-    for (uint j = 0; j < num_threads; ++j) {
-      eim_bivpooled[i] += eim_bivpooled_threads[j][i];
-    }
-  }
-	   }
-	   	   if (eim_mode == 2 || eim_mode == 3) {
-  eim_bivqual.resize(promispairs.size(), 0);
-        for (size_t i = 0; i < promispairs.size(); ++i) {
-    for (uint j = 0; j < num_threads; ++j) {
-      eim_bivqual[i] += eim_bivqual_threads[j][i];
-    }
-  }
-	   }
-	   	   if (eim_mode == 2 || eim_mode == 4) {
-  eim_bivquant_ll.resize(promispairs.size(), 0);
-  eim_bivquant_lh.resize(promispairs.size(), 0);
-    eim_bivquant_hl.resize(promispairs.size(), 0);
-	  eim_bivquant_hh.resize(promispairs.size(), 0);
-        for (size_t i = 0; i < promispairs.size(); ++i) {
-    for (uint j = 0; j < num_threads; ++j) {
-      eim_bivquant_ll[i] += eim_bivquant_ll_threads[j][i];
-	  eim_bivquant_lh[i] += eim_bivquant_lh_threads[j][i];
-	  eim_bivquant_hl[i] += eim_bivquant_hl_threads[j][i];
-	  eim_bivquant_hh[i] += eim_bivquant_hh_threads[j][i];
-    }
-  }
-	   }
-	   }
-	   
-	       eim_univ_threads.clear();
-    eim_bivpooled_threads.clear();
-	    eim_bivqual_threads.clear();
-	    eim_bivquant_ll_threads.clear();
-		eim_bivquant_lh_threads.clear();
-		eim_bivquant_hl_threads.clear();
-		eim_bivquant_hh_threads.clear();
 
-  for (size_t i = 0; i < eim_univ.size(); ++i) {
+  if (eim_mode != 5)
+  {
+    if (eim_mode == 1)
+    {
+      eim_bivpooled.resize(promispairs.size(), 0);
+      for (size_t i = 0; i < promispairs.size(); ++i)
+      {
+        for (uint j = 0; j < num_threads; ++j)
+        {
+          eim_bivpooled[i] += eim_bivpooled_threads[j][i];
+        }
+      }
+    }
+    if (eim_mode == 2 || eim_mode == 3)
+    {
+      eim_bivqual.resize(promispairs.size(), 0);
+      for (size_t i = 0; i < promispairs.size(); ++i)
+      {
+        for (uint j = 0; j < num_threads; ++j)
+        {
+          eim_bivqual[i] += eim_bivqual_threads[j][i];
+        }
+      }
+    }
+    if (eim_mode == 2 || eim_mode == 4)
+    {
+      eim_bivquant_ll.resize(promispairs.size(), 0);
+      eim_bivquant_lh.resize(promispairs.size(), 0);
+      eim_bivquant_hl.resize(promispairs.size(), 0);
+      eim_bivquant_hh.resize(promispairs.size(), 0);
+      for (size_t i = 0; i < promispairs.size(); ++i)
+      {
+        for (uint j = 0; j < num_threads; ++j)
+        {
+          eim_bivquant_ll[i] += eim_bivquant_ll_threads[j][i];
+          eim_bivquant_lh[i] += eim_bivquant_lh_threads[j][i];
+          eim_bivquant_hl[i] += eim_bivquant_hl_threads[j][i];
+          eim_bivquant_hh[i] += eim_bivquant_hh_threads[j][i];
+        }
+      }
+    }
+  }
+
+  eim_univ_threads.clear();
+  eim_bivpooled_threads.clear();
+  eim_bivqual_threads.clear();
+  eim_bivquant_ll_threads.clear();
+  eim_bivquant_lh_threads.clear();
+  eim_bivquant_hl_threads.clear();
+  eim_bivquant_hh_threads.clear();
+
+  for (size_t i = 0; i < eim_univ.size(); ++i)
+  {
     eim_univ[i] /= num_trees;
   }
-  if (eim_mode != 5) {
+  if (eim_mode != 5)
+  {
 
- if (eim_mode == 1) {
-  for (size_t i = 0; i < eim_bivpooled.size(); ++i) {
-    eim_bivpooled[i] /= num_trees;
+    if (eim_mode == 1)
+    {
+      for (size_t i = 0; i < eim_bivpooled.size(); ++i)
+      {
+        eim_bivpooled[i] /= num_trees;
+      }
+    }
+    if (eim_mode == 2 || eim_mode == 3)
+    {
+      for (size_t i = 0; i < eim_bivqual.size(); ++i)
+      {
+        eim_bivqual[i] /= num_trees;
+      }
+    }
+    if (eim_mode == 2 || eim_mode == 4)
+    {
+      for (size_t i = 0; i < eim_bivquant_ll.size(); ++i)
+      {
+        eim_bivquant_ll[i] /= num_trees;
+        eim_bivquant_lh[i] /= num_trees;
+        eim_bivquant_hl[i] /= num_trees;
+        eim_bivquant_hh[i] /= num_trees;
+      }
+    }
   }
- }
- if (eim_mode == 2 || eim_mode == 3) {
-  for (size_t i = 0; i < eim_bivqual.size(); ++i) {
-    eim_bivqual[i] /= num_trees;
-  }
- }
- if (eim_mode == 2 || eim_mode == 4) {
-  for (size_t i = 0; i < eim_bivquant_ll.size(); ++i) {
-    eim_bivquant_ll[i] /= num_trees;
-	eim_bivquant_lh[i] /= num_trees;
-	eim_bivquant_hl[i] /= num_trees;
-	eim_bivquant_hh[i] /= num_trees;
-  }
- }
-
 }
-  
+
+void Forest::computeImportanceMuw() {
+	// Empty on purpose (virtual function only implemented in classification and probability)
 }
 
 void Forest::growTreesInThread(uint thread_idx, std::vector<double>* variable_importance) {
@@ -813,6 +673,9 @@ void Forest::predictTreesInThread(uint thread_idx, const Data* prediction_data, 
 	  }
 	  if (divfortype == 2) {
   		  trees[i]->predictMultivariate(prediction_data, oob_prediction);
+	  }
+	  if (divfortype == 3) {
+  		  trees[i]->predictMuw(prediction_data, oob_prediction);
 	  }
 
       // Check for user interrupt
@@ -910,35 +773,6 @@ void Forest::computeTreePermutationImportanceMultivariateInThread(uint thread_id
     }
   }
 }
-
-// #nocov start
-void Forest::loadFromFile(std::string filename) {
-  if (verbose_out)
-    *verbose_out << "Loading forest from file " << filename << "." << std::endl;
-
-// Open file for reading
-  std::ifstream infile;
-  infile.open(filename, std::ios::binary);
-  if (!infile.good()) {
-    throw std::runtime_error("Could not read from input file: " + filename + ".");
-  }
-
-// Read dependent_varID and num_trees
-  infile.read((char*) &dependent_varID, sizeof(dependent_varID));
-  infile.read((char*) &num_trees, sizeof(num_trees));
-
-// Read is_ordered_variable
-  readVector1D(data->getIsOrderedVariable(), infile);
-
-// Read tree data. This is different for tree types -> virtual function
-  loadFromFileInternal(infile);
-
-  infile.close();
-
-// Create thread ranges
-  equalSplit(thread_ranges, 0, num_trees - 1, num_threads);
-}
-// #nocov end
 
 void Forest::setSplitWeightVector(std::vector<std::vector<double>>& split_select_weights) {
 

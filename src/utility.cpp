@@ -639,4 +639,31 @@ std::stringstream& readFromStream(std::stringstream& in, double& token) {
   return in;
 }
 
+// Function to sort and count
+void sortAndCount(std::vector<size_t>& sampleIDs_sub, const std::vector<double>& values_sub, const std::vector<double> splits_temp, std::vector<size_t>& counts) {
+    // Create pairs of IDs and corresponding values
+    std::vector<std::pair<size_t, double>> pairs;
+    for (size_t i = 0; i < sampleIDs_sub.size(); ++i) {
+        pairs.emplace_back(sampleIDs_sub[i], values_sub[i]);
+    }
+
+    // Sort the pairs based on the values in values_sub
+    std::sort(pairs.begin(), pairs.end(), [](const auto& a, const auto& b) {
+        return a.second < b.second;
+    });
+
+    // Initialize counters
+    counts.resize(splits_temp.size() + 1, 0);
+    size_t cIndex = 0;
+
+    // Count and reorder sampleIDs_sub
+    for (size_t i = 0; i < pairs.size(); ++i) {
+        while (cIndex < splits_temp.size() && pairs[i].second > splits_temp[cIndex]) {
+            ++cIndex;
+        }
+        ++counts[cIndex];
+        sampleIDs_sub[i] = pairs[i].first;
+    }
+}
+
 } // namespace diversityForest

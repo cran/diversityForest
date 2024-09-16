@@ -37,6 +37,8 @@ public:
 	  std::vector<std::vector<size_t>>& forest_split_types, std::vector<std::vector<std::vector<size_t>>>& forest_split_multvarIDs, 
 	  std::vector<std::vector<std::vector<std::vector<bool>>>>& forest_split_directs, 
 	  std::vector<std::vector<std::vector<std::vector<double>>>>& forest_split_multvalues, 
+	  std::vector<std::vector<std::vector<size_t>>>& forest_child_muwnodeIDs,
+	  std::vector<std::vector<std::vector<double>>>& forest_split_muwvalues, 	
       std::vector<double>& class_values, std::vector<std::vector<std::vector<double>>>& forest_terminal_class_counts,
       std::vector<bool>& is_ordered_variable);
 
@@ -49,6 +51,50 @@ public:
   void setClassWeights(std::vector<double>& class_weights) {
     this->class_weights = class_weights;
   }
+  
+  std::vector<std::vector<std::vector<double>>> getSplitMuwValues() {
+    std::vector<std::vector<std::vector<double>>> result;
+    for (auto &tree : trees) {
+      TreeProbability *treeProb = dynamic_cast<TreeProbability *>(tree.get());
+      if (treeProb)
+      {
+        result.push_back(treeProb->getSplitMuwValues());
+      }
+    }
+    return result;
+  }
+
+  std::vector<std::vector<std::vector<size_t>>> getChildMuwNodeIDs() {
+    std::vector<std::vector<std::vector<size_t>>> result;
+    for (auto &tree : trees) {
+      TreeProbability *treeProb = dynamic_cast<TreeProbability *>(tree.get());
+      if (treeProb)
+      {
+        result.push_back(treeProb->getChildMuwNodeIDs());
+      }
+    }
+    return result;
+  }
+  
+  std::vector<std::vector<size_t>> getMuwInds() {
+    std::vector<std::vector<size_t>> result;
+    for (auto &tree : trees) {
+      TreeProbability *treeProb = dynamic_cast<TreeProbability *>(tree.get());
+      if (treeProb)
+      {
+        result.push_back(treeProb->getMuwInds());
+      }
+    }
+    return result;
+  }
+
+  const std::vector<double>& getVariableImportanceMuwMultiway() const {
+    return var_imp_multiway;
+  }
+  
+  const std::vector<double>& getVariableImportanceMuwDiscr() const {
+    return var_imp_discr;
+  }
 
 protected:
   void initInternal(std::string status_variable_name) override;
@@ -56,11 +102,12 @@ protected:
   void allocatePredictMemory() override;
   void predictInternal(size_t sample_idx) override;
   void computePredictionErrorInternal() override;
-  void writeOutputInternal() override;
-  void writeConfusionFile() override;
-  void writePredictionFile() override;
   void saveToFileInternal(std::ofstream& outfile) override;
-  void loadFromFileInternal(std::ifstream& infile) override;
+
+  void computeImportanceMuw() override;
+
+  void computeTreeImportanceMuwInThread(uint thread_idx, std::vector<double>& importance_multiway,
+     std::vector<double>& importance_discr);
 
   // Classes of the dependent variable and classIDs for responses
   std::vector<double> class_values;
@@ -69,6 +116,10 @@ protected:
 
   // Splitting weights
   std::vector<double> class_weights;
+
+  // Variable importance for multiway and binary splits:
+  std::vector<double> var_imp_multiway;
+  std::vector<double> var_imp_discr;
 
 private:
   const std::vector<double>& getTreePrediction(size_t tree_idx, size_t sample_idx) const;

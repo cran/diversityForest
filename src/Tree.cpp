@@ -22,20 +22,20 @@ namespace diversityForest
 
   Tree::Tree() : dependent_varID(0), mtry(0), nsplits(0), npairs(0), proptry(0.0), num_samples(0), num_samples_oob(0), min_node_size(0), deterministic_varIDs(0), split_select_varIDs(
                                                                                                                                                            0),
-                 split_select_weights(0), case_weights(0), manual_inbag(0), oob_sampleIDs(0), promispairs(0), eim_mode(0), divfortype(0), holdout(false), keep_inbag(
+                 split_select_weights(0), case_weights(0), manual_inbag(0), oob_sampleIDs(0), promispairs(0), eim_mode(0), divfortype(0), metricind(0), holdout(false), keep_inbag(
                                                                                                                   false),
                  data(0), variable_importance(0), importance_mode(DEFAULT_IMPORTANCE_MODE), sample_with_replacement(
                                                                                                 true),
                  sample_fraction(0), memory_saving_splitting(false), splitrule(DEFAULT_SPLITRULE), alpha(DEFAULT_ALPHA), minprop(
                                                                                                                              DEFAULT_MINPROP),
                  num_random_splits(DEFAULT_NUM_RANDOM_SPLITS), max_depth(DEFAULT_MAXDEPTH), depth(0), last_left_nodeID(0)
-  { // asdf
+  { 
   }
 
   Tree::Tree(std::vector<std::vector<size_t>> &child_nodeIDs, std::vector<size_t> &split_varIDs,
              std::vector<double> &split_values, std::vector<size_t> &split_types, std::vector<std::vector<size_t>> &split_multvarIDs,
              std::vector<std::vector<std::vector<bool>>> &split_directs,
-             std::vector<std::vector<std::vector<double>>> &split_multvalues) : dependent_varID(0), mtry(0), nsplits(0), npairs(0), proptry(0.0), num_samples(0), num_samples_oob(0), min_node_size(0), deterministic_varIDs(0), split_select_varIDs(0), split_select_weights(0), case_weights(0), manual_inbag(0), split_varIDs(split_varIDs), split_values(split_values), split_types(split_types), split_multvarIDs(split_multvarIDs), split_directs(split_directs), split_multvalues(split_multvalues), child_nodeIDs(child_nodeIDs), oob_sampleIDs(0), promispairs(0), eim_mode(0), divfortype(0), holdout(false), keep_inbag(false), data(0), variable_importance(0), importance_mode(DEFAULT_IMPORTANCE_MODE), sample_with_replacement(true), sample_fraction(0), memory_saving_splitting(false), splitrule(DEFAULT_SPLITRULE), alpha(DEFAULT_ALPHA), minprop(DEFAULT_MINPROP), num_random_splits(DEFAULT_NUM_RANDOM_SPLITS), max_depth(DEFAULT_MAXDEPTH), depth(0), last_left_nodeID(0)
+             std::vector<std::vector<std::vector<double>>> &split_multvalues) : dependent_varID(0), mtry(0), nsplits(0), npairs(0), proptry(0.0), num_samples(0), num_samples_oob(0), min_node_size(0), deterministic_varIDs(0), split_select_varIDs(0), split_select_weights(0), case_weights(0), manual_inbag(0), split_varIDs(split_varIDs), split_values(split_values), split_types(split_types), split_multvarIDs(split_multvarIDs), split_directs(split_directs), split_multvalues(split_multvalues), child_nodeIDs(child_nodeIDs), oob_sampleIDs(0), promispairs(0), eim_mode(0), divfortype(0), metricind(0), holdout(false), keep_inbag(false), data(0), variable_importance(0), importance_mode(DEFAULT_IMPORTANCE_MODE), sample_with_replacement(true), sample_fraction(0), memory_saving_splitting(false), splitrule(DEFAULT_SPLITRULE), alpha(DEFAULT_ALPHA), minprop(DEFAULT_MINPROP), num_random_splits(DEFAULT_NUM_RANDOM_SPLITS), max_depth(DEFAULT_MAXDEPTH), depth(0), last_left_nodeID(0)
   { // asdf
   }
 
@@ -44,17 +44,19 @@ namespace diversityForest
                   std::vector<double> *split_select_weights, ImportanceMode importance_mode, uint min_node_size,
                   bool sample_with_replacement, bool memory_saving_splitting, SplitRule splitrule, std::vector<double> *case_weights,
                   std::vector<size_t> *manual_inbag, bool keep_inbag, std::vector<double> *sample_fraction, double alpha,
-                  double minprop, bool holdout, uint num_random_splits, uint max_depth, std::vector<std::vector<size_t>> *promispairs, uint eim_mode, uint divfortype)
-  { // asdf
+                  double minprop, bool holdout, uint num_random_splits, uint max_depth, std::vector<std::vector<size_t>> *promispairs, uint eim_mode, uint divfortype, std::vector<size_t> *metricind)
+  {
 
     this->data = data;
     this->mtry = mtry;
     this->dependent_varID = dependent_varID;
     this->num_samples = num_samples;
     this->memory_saving_splitting = memory_saving_splitting;
-    this->nsplits = nsplits; // asdf
-	this->npairs = npairs; // asdf
-    this->proptry = proptry; // asdf
+    this->nsplits = nsplits;
+	this->npairs = npairs;
+    this->proptry = proptry;
+    this->divfortype = divfortype;
+	this->metricind = metricind;
 
     // Create root node, assign bootstrap sample and oob samples
     child_nodeIDs.push_back(std::vector<size_t>());
@@ -67,7 +69,11 @@ namespace diversityForest
     {
       createEmptyNodeMultivariate();
     }
-
+    if (divfortype == 3)
+    {
+      createEmptyNodeInternal();
+    }
+	
     // Initialize random number generator and set seed
     random_number_generator.seed(seed);
 
@@ -89,7 +95,6 @@ namespace diversityForest
     this->eim_mode = eim_mode;
     this->max_depth = max_depth;
     this->promispairs = promispairs;
-    this->divfortype = divfortype;
   }
 
   void Tree::grow(std::vector<double> *variable_importance)
@@ -137,8 +142,6 @@ namespace diversityForest
         bootstrapWithoutReplacement();
       }
     }
-
-    ///Rcpp::Rcout << "Hier durch 1" << std::endl;
 
     // Init start and end positions
     start_pos[0] = 0;
@@ -333,13 +336,18 @@ namespace diversityForest
       prediction_terminal_nodeIDs[i] = nodeID;
     }
   }
+  
+  void Tree::predictMuw(const Data *prediction_data, bool oob_prediction)
+  {
+	 // Empty on purpose (virtual function only implemented in classification and probability)
+  }
 
   void Tree::computePermutationImportance(std::vector<double> &forest_importance, std::vector<double> &forest_variance)
   {
 
     size_t num_independent_variables = data->getNumCols() - data->getNoSplitVariables().size();
 
-    // Compute normal prediction accuracy for each tree. Predictions already computed..
+	// Compute normal prediction accuracy for each tree. Predictions already computed..
     double accuracy_normal = computePredictionAccuracyInternal();
 
     prediction_terminal_nodeIDs.clear();
@@ -362,12 +370,30 @@ namespace diversityForest
         }
       }
 
+      // If variable is not used for splitting, skip it
+      double accuracy_difference = 0;
+      bool iscontained = false;
+      for (size_t j = 0; j < split_varIDs.size(); ++j)
+      {
+        if (split_varIDs[j] == varID)
+        {
+          iscontained = true;
+          break;
+        }
+      }
+      if (!iscontained)
+      {
+        forest_importance[i] += 0;
+      }
+      else
+      {
       // Permute and compute prediction accuracy again for this permutation and save difference
-      permuteAndPredictOobSamples(varID, permutations);
+	  permuteAndPredictOobSamples(varID, permutations);
       double accuracy_permuted = computePredictionAccuracyInternal();
-      double accuracy_difference = accuracy_normal - accuracy_permuted;
+      accuracy_difference = accuracy_normal - accuracy_permuted;
       forest_importance[i] += accuracy_difference;
-
+      }
+		
       // Compute variance
       if (importance_mode == IMP_PERM_BREIMAN)
       {
@@ -513,15 +539,7 @@ namespace diversityForest
             forest_bivpooled[i] += accuracy_difference;
           }
         }
-		
-		// HIER GEHTS WEITER MIT DEM KOMMENTIEREN
-		// HIER GEHTS WEITER MIT DEM KOMMENTIEREN
-		// HIER GEHTS WEITER MIT DEM KOMMENTIEREN
-		// HIER GEHTS WEITER MIT DEM KOMMENTIEREN
-		// HIER GEHTS WEITER MIT DEM KOMMENTIEREN
-		// HIER GEHTS WEITER MIT DEM KOMMENTIEREN
-		// HIER GEHTS WEITER MIT DEM KOMMENTIEREN
-		
+				
         // qualitative EIM values:
         if (eim_mode == 2 || eim_mode == 3)
         {
@@ -739,11 +757,11 @@ namespace diversityForest
     std::copy(deterministic_varIDs->begin(), deterministic_varIDs->end(), std::inserter(result, result.end()));
   }
 
-  // asdf: New function.
+  // New function.
   // This function samples the pairs of variable IDs and splits in these
   // variables.
   void Tree::drawSplitsUnivariate(size_t nodeID, size_t n_triedsplits, std::vector<std::pair<size_t, double>> &sampled_varIDs_values)
-  { // katze
+  {
 
     // Get the total number of variables
     size_t num_vars = data->getNumCols();
@@ -939,12 +957,6 @@ namespace diversityForest
       //	gezogenepunkte.push_back(std::get<1>(sampled_varIDs_values[i]));
       //	}
 
-      /// Rcpp::Rcout << "Ich komme aus C++: Hat funktionier!" << std::endl;
-      //std::copy(gezogenevars.begin(), gezogenevars.end(), std::ostream_iterator<size_t>(std::cout, " "));
-      //Rcpp::Rcout << "Gezogene Punkte:" << std::endl;
-      //std::copy(begin(gezogenepunkte), end(gezogenepunkte), std::ostream_iterator<double>(std::cout, " "));
-      //Rcpp::Rcout << " " << std::endl;
-      //Rcpp::Rcout << " " << std::endl;
     }
   }
 
@@ -1409,49 +1421,21 @@ draw = unif_dist2(random_number_generator);
 
     bool stop;
 
-    ///Rcpp::Rcout << "nodeID: " << nodeID << std::endl;
+    /// Rcpp::Rcout << "nodeID: " << nodeID << std::endl;
 
     if (divfortype == 1)
     {
 
       // Rcpp::Rcout << "Laenge sampled_split_types" << sampled_split_types.size() << std::endl;
-      // Rcpp::Rcout << "Laenge sampled_split_multvarIDs" << sampled_split_multvarIDs.size() << std::endl;
-      //  Rcpp::Rcout << "Laenge sampled_split_directs" << sampled_split_directs.size() << std::endl;
-      //	  Rcpp::Rcout << "Laenge sampled_split_multvalues" << sampled_split_multvalues.size() << std::endl;
-
-      // Rcpp::Rcout << " " << std::endl;
-
-      // Rcpp::Rcout << "Laenge 1.Sch sampled_split_multvarIDs" << sampled_split_multvarIDs[0].size() << std::endl;
-      // Rcpp::Rcout << "Laenge 2.Sch sampled_split_multvarIDs" << sampled_split_multvarIDs[0][0].size() << std::endl;
-      // Rcpp::Rcout << "Laenge 1.Sch sampled_split_directs" << sampled_split_directs[0].size() << std::endl;
-      // Rcpp::Rcout << "Laenge 2.Sch sampled_split_directs" << sampled_split_directs[0][0].size() << std::endl;
-      // Rcpp::Rcout << "Laenge 1.Sch sampled_split_multvalues" << sampled_split_multvalues[0].size() << std::endl;
-      // Rcpp::Rcout << "Laenge 2.Sch sampled_split_multvalues" << sampled_split_multvalues[0][0].size() << std::endl;
-
-      // for (size_t i = 0; i < n_triedsplits; ++i) {
-
-      // 			  Rcpp::Rcout << " " << std::endl;
-      // Rcpp::Rcout << "sampled_split_types" << sampled_split_types[i] << std::endl;
-      // Rcpp::Rcout << "sampled_split_multvarIDs" << sampled_split_multvarIDs[i][0][0] << std::endl;
-      // Rcpp::Rcout << "sampled_split_directs" << sampled_split_directs[i][0][0] << std::endl;
-      // Rcpp::Rcout << "sampled_split_multvalues" << sampled_split_multvalues[i][0][0] << std::endl;
-      // Rcpp::Rcout << " " << std::endl;
-
-      // }
-
-      // Rcpp::Rcout << "Laenge sampled_split_types" << sampled_split_types.size() << std::endl;
-      // Rcpp::Rcout << "Laenge sampled_split_multvarIDs" << sampled_split_multvarIDs.size() << std::endl;
-      //   Rcpp::Rcout << "Laenge sampled_split_directs" << sampled_split_directs.size() << std::endl;
-      //   Rcpp::Rcout << "Laenge sampled_split_multvalues" << sampled_split_multvalues.size() << std::endl;
 
       // Draw the variables and the candidate splits - after performing this step,
       // sampled_varIDs_values will contain the variables and candidate splits:
-      size_t n_triedsplits = (size_t)nsplits; // asdf
+      size_t n_triedsplits = (size_t)nsplits;
       std::vector<std::pair<size_t, double>> sampled_varIDs_values;
-      drawSplitsUnivariate(nodeID, n_triedsplits, sampled_varIDs_values); // asdf
+      drawSplitsUnivariate(nodeID, n_triedsplits, sampled_varIDs_values);
 
       // Perform the splitting using the subclass method:
-      stop = splitNodeUnivariateInternal(nodeID, sampled_varIDs_values); // asdf
+      stop = splitNodeUnivariateInternal(nodeID, sampled_varIDs_values);
 
       if (stop)
       {
@@ -1528,12 +1512,6 @@ draw = unif_dist2(random_number_generator);
       end_pos[right_child_nodeID] = end_pos[nodeID];
 
       // Rcpp::Rcout << "left_child_nodeID: " << left_child_nodeID << std::endl;
-      // Rcpp::Rcout << "start_pos[left_child_nodeID]: " << start_pos[left_child_nodeID] << std::endl;
-      // Rcpp::Rcout << "end_pos[left_child_nodeID]: " << end_pos[left_child_nodeID] << std::endl;
-      // Rcpp::Rcout << " " << std::endl;
-      // Rcpp::Rcout << "right_child_nodeID: " << right_child_nodeID << std::endl;
-      // Rcpp::Rcout << "start_pos[right_child_nodeID]: " << start_pos[right_child_nodeID] << std::endl;
-      // Rcpp::Rcout << "end_pos[right_child_nodeID]: " << end_pos[right_child_nodeID] << std::endl;
 
       // No terminal node
       return false;
@@ -1542,7 +1520,7 @@ draw = unif_dist2(random_number_generator);
     if (divfortype == 2)
     {
 
-      size_t n_triedsplits = (size_t)nsplits; // asdf
+      size_t n_triedsplits = (size_t)nsplits;
       std::vector<size_t> sampled_split_types;
       std::vector<std::vector<size_t>> sampled_split_multvarIDs;
       std::vector<std::vector<std::vector<bool>>> sampled_split_directs;
@@ -1607,50 +1585,18 @@ draw = unif_dist2(random_number_generator);
           std::swap(sampleIDs[pos], sampleIDs[start_pos[right_child_nodeID]]);
         }
       }
-      /////}
-      /////else
-      /////{
-      /////  // Unordered: If bit at position is 1 -> right, 0 -> left
-      /////   size_t pos = start_pos[nodeID];
-      /////   while (pos < start_pos[right_child_nodeID])
-      /////   {
-      /////     size_t sampleID = sampleIDs[pos];
-      /////     double level = data->get(sampleID, split_varID);
-      /////     size_t factorID = floor(level) - 1;
-      /////     size_t splitID = floor(split_value);
-      /////
-      /////     // Left if 0 found at position factorID
-      /////     if (!(splitID & (1 << factorID)))
-      /////     {
-      /////       // If going to left, do nothing
-      /////       ++pos;
-      /////     }
-      /////     else
-      /////     {
-      /////       // If going to right, move to right end
-      /////       --start_pos[right_child_nodeID];
-      /////       std::swap(sampleIDs[pos], sampleIDs[start_pos[right_child_nodeID]]);
-      /////     }
-      /////   }
-      ///// }
 
       // End position of left child is start position of right child
       end_pos[left_child_nodeID] = start_pos[right_child_nodeID];
       end_pos[right_child_nodeID] = end_pos[nodeID];
 
       // Rcpp::Rcout << "left_child_nodeID: " << left_child_nodeID << std::endl;
-      // Rcpp::Rcout << "start_pos[left_child_nodeID]: " << start_pos[left_child_nodeID] << std::endl;
-      // Rcpp::Rcout << "end_pos[left_child_nodeID]: " << end_pos[left_child_nodeID] << std::endl;
-      // Rcpp::Rcout << " " << std::endl;
-      // Rcpp::Rcout << "right_child_nodeID: " << right_child_nodeID << std::endl;
-      // Rcpp::Rcout << "start_pos[right_child_nodeID]: " << start_pos[right_child_nodeID] << std::endl;
-      // Rcpp::Rcout << "end_pos[right_child_nodeID]: " << end_pos[right_child_nodeID] << std::endl;
 
       // No terminal node
       return false;
     }
-	
-	// To satisfy the compiler:
+
+    // To satisfy the compiler:
     return false;
   }
 
@@ -1910,7 +1856,7 @@ draw = unif_dist2(random_number_generator);
     // For each sample, drop down the tree and add prediction
     for (size_t i = 0; i < num_samples_oob; ++i)
     {
-      size_t nodeID = randomizedDropDownSample(permuted_multvarID, oob_sampleIDs[i], effect_type); // dropDownSamplePermuted
+      size_t nodeID = randomizedDropDownSample(permuted_multvarID, oob_sampleIDs[i], effect_type);
       prediction_terminal_nodeIDs[i] = nodeID;
     }
   }

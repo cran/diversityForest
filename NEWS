@@ -1,5 +1,0 @@
-
-##### Version 0.4.0
-* Improved documentation
-* Add categprob to plotPair()
-* Switch to C++14 standard

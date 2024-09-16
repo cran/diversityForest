@@ -25,6 +25,7 @@
 timepoints <- function(x, ...)  UseMethod("timepoints")
 
 # Autor: Marvin N. Wright
+#' @export
 timepoints.divfor.prediction <- function(x, ...) {
   if (!inherits(x, "divfor.prediction")) {
     stop("Object ist no divfor.prediction object.")
@@ -39,6 +40,7 @@ timepoints.divfor.prediction <- function(x, ...) {
 }
 
 # Autor: Marvin N. Wright
+#' @export
 timepoints.divfor <- function(x, ...) {
   if (!inherits(x, "divfor")) {
     stop("Object ist no divfor object.")

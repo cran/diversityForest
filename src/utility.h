@@ -499,6 +499,15 @@ std::vector<size_t> numSamplesLeftOfCutpoint(std::vector<double>& x, const std::
  */
 std::stringstream& readFromStream(std::stringstream& in, double& token);
 
+/**
+ * Sorts the given sample IDs and counts the number of occurrences in each split based on the corresponding values.
+ * 
+ * @param sampleIDs_sub The vector of sample IDs to be sorted and counted.
+ * @param values_sub The vector of corresponding values used for sorting.
+ * @param splits_temp The vector of split values.
+ * @param counts The vector to store the count of occurrences in each child node.
+ */
+void sortAndCount(std::vector<size_t>& sampleIDs_sub, const std::vector<double>& values_sub, const std::vector<double> splits_temp, std::vector<size_t>& counts);
 
 // Reorder the vector 'v' using the indices in 'order':
 /*

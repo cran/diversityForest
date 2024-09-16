@@ -23,6 +23,8 @@ void ForestProbability::loadForest(size_t dependent_varID, size_t num_trees,
     std::vector<std::vector<size_t>>& forest_split_varIDs, std::vector<std::vector<double>>& forest_split_values,
 	std::vector<std::vector<size_t>>& forest_split_types, std::vector<std::vector<std::vector<size_t>>>& forest_split_multvarIDs, 
 	std::vector<std::vector<std::vector<std::vector<bool>>>>& forest_split_directs, std::vector<std::vector<std::vector<std::vector<double>>>>& forest_split_multvalues,
+	std::vector<std::vector<std::vector<size_t>> >& forest_child_muwnodeIDs,
+	std::vector<std::vector<std::vector<double>>>& forest_split_muwvalues,
     std::vector<double>& class_values, std::vector<std::vector<std::vector<double>>>& forest_terminal_class_counts,
     std::vector<bool>& is_ordered_variable) {
 
@@ -31,12 +33,14 @@ void ForestProbability::loadForest(size_t dependent_varID, size_t num_trees,
   this->class_values = class_values;
   data->setIsOrderedVariable(is_ordered_variable);
 
+  std::vector<size_t> empty_muw_inds;
+  
   // Create trees
   trees.reserve(num_trees);
   for (size_t i = 0; i < num_trees; ++i) {
     trees.push_back(
         std::make_unique<TreeProbability>(forest_child_nodeIDs[i], forest_split_varIDs[i], forest_split_values[i], forest_split_types[i], forest_split_multvarIDs[i], 
-	    forest_split_directs[i], forest_split_multvalues[i], &this->class_values, &response_classIDs, forest_terminal_class_counts[i]));
+	    forest_split_directs[i], forest_split_multvalues[i], forest_child_muwnodeIDs[i], forest_split_muwvalues[i], empty_muw_inds, &this->class_values, &response_classIDs, forest_terminal_class_counts[i]));
   }
 
   // Create thread ranges
@@ -206,73 +210,6 @@ void ForestProbability::computePredictionErrorInternal() {
 }
 
 // #nocov start
-void ForestProbability::writeOutputInternal() {
-  if (verbose_out) {
-    *verbose_out << "Tree type:                         " << "Probability estimation" << std::endl;
-  }
-}
-
-void ForestProbability::writeConfusionFile() {
-
-// Open confusion file for writing
-  std::string filename = output_prefix + ".confusion";
-  std::ofstream outfile;
-  outfile.open(filename, std::ios::out);
-  if (!outfile.good()) {
-    throw std::runtime_error("Could not write to confusion file: " + filename + ".");
-  }
-
-// Write confusion to file
-  outfile << "Overall OOB prediction error (MSE): " << overall_prediction_error << std::endl;
-
-  outfile.close();
-  if (verbose_out)
-    *verbose_out << "Saved prediction error to file " << filename << "." << std::endl;
-}
-
-void ForestProbability::writePredictionFile() {
-
-  // Open prediction file for writing
-  std::string filename = output_prefix + ".prediction";
-  std::ofstream outfile;
-  outfile.open(filename, std::ios::out);
-  if (!outfile.good()) {
-    throw std::runtime_error("Could not write to prediction file: " + filename + ".");
-  }
-
-  // Write
-  outfile << "Class predictions, one sample per row." << std::endl;
-  for (auto& class_value : class_values) {
-    outfile << class_value << " ";
-  }
-  outfile << std::endl << std::endl;
-
-  if (predict_all) {
-    for (size_t k = 0; k < num_trees; ++k) {
-      outfile << "Tree " << k << ":" << std::endl;
-      for (size_t i = 0; i < predictions.size(); ++i) {
-        for (size_t j = 0; j < predictions[i].size(); ++j) {
-          outfile << predictions[i][j][k] << " ";
-        }
-        outfile << std::endl;
-      }
-      outfile << std::endl;
-    }
-  } else {
-    for (size_t i = 0; i < predictions.size(); ++i) {
-      for (size_t j = 0; j < predictions[i].size(); ++j) {
-        for (size_t k = 0; k < predictions[i][j].size(); ++k) {
-          outfile << predictions[i][j][k] << " ";
-        }
-        outfile << std::endl;
-      }
-    }
-  }
-
-  if (verbose_out)
-    *verbose_out << "Saved predictions to file " << filename << "." << std::endl;
-}
-
 void ForestProbability::saveToFileInternal(std::ofstream& outfile) {
 
 // Write num_variables
@@ -286,66 +223,6 @@ void ForestProbability::saveToFileInternal(std::ofstream& outfile) {
   saveVector1D(class_values, outfile);
 }
 
-void ForestProbability::loadFromFileInternal(std::ifstream& infile) {
-
-// Read number of variables
-  size_t num_variables_saved;
-  infile.read((char*) &num_variables_saved, sizeof(num_variables_saved));
-
-// Read treetype
-  TreeType treetype;
-  infile.read((char*) &treetype, sizeof(treetype));
-  if (treetype != TREE_PROBABILITY) {
-    throw std::runtime_error("Wrong treetype. Loaded file is not a probability estimation forest.");
-  }
-
-// Read class_values
-  readVector1D(class_values, infile);
-
-  for (size_t i = 0; i < num_trees; ++i) {
-
-    // Read data
-    std::vector<std::vector<size_t>> child_nodeIDs;
-    readVector2D(child_nodeIDs, infile);
-    std::vector<size_t> split_varIDs;
-    readVector1D(split_varIDs, infile);
-    std::vector<double> split_values;
-    readVector1D(split_values, infile);
-
-    // Read Terminal node class counts
-    std::vector<size_t> terminal_nodes;
-    readVector1D(terminal_nodes, infile);
-    std::vector<std::vector<double>> terminal_class_counts_vector;
-    readVector2D(terminal_class_counts_vector, infile);
-
-	std::vector<size_t> split_types;
-    std::vector<std::vector<size_t>> split_multvarIDs;
-    std::vector<std::vector<std::vector<bool>>> split_directs;
-    std::vector<std::vector<std::vector<double>>> split_multvalues;
-
-    // Convert Terminal node class counts to vector with empty elemtents for non-terminal nodes
-    std::vector<std::vector<double>> terminal_class_counts;
-    terminal_class_counts.resize(child_nodeIDs[0].size(), std::vector<double>());
-    for (size_t j = 0; j < terminal_nodes.size(); ++j) {
-      terminal_class_counts[terminal_nodes[j]] = terminal_class_counts_vector[j];
-    }
-
-    // If dependent variable not in test data, change variable IDs accordingly
-    if (num_variables_saved > num_variables) {
-      for (auto& varID : split_varIDs) {
-        if (varID >= dependent_varID) {
-          --varID;
-        }
-      }
-    }
-
-    // Create tree
-    trees.push_back(
-        std::make_unique<TreeProbability>(child_nodeIDs, split_varIDs, split_values, split_types, split_multvarIDs, split_directs, split_multvalues, &class_values, &response_classIDs,
-            terminal_class_counts));
-  }
-}
-
 const std::vector<double>& ForestProbability::getTreePrediction(size_t tree_idx, size_t sample_idx) const {
   const auto& tree = dynamic_cast<const TreeProbability&>(*trees[tree_idx]);
   return tree.getPrediction(sample_idx);
@@ -354,6 +231,123 @@ const std::vector<double>& ForestProbability::getTreePrediction(size_t tree_idx,
 size_t ForestProbability::getTreePredictionTerminalNodeID(size_t tree_idx, size_t sample_idx) const {
   const auto& tree = dynamic_cast<const TreeProbability&>(*trees[tree_idx]);
   return tree.getPredictionTerminalNodeID(sample_idx);
+}
+
+// Multi Forests: Compute variable importance.
+void ForestProbability::computeImportanceMuw() {
+
+  // Compute EIM values in multiple threads
+  progress = 0;
+#ifdef R_BUILD
+  aborted = false;
+  aborted_threads = 0;
+#endif
+
+  std::vector<std::thread> threads;
+  threads.reserve(num_threads);
+
+  // Initialize importance
+  std::vector<std::vector<double>> var_imp_multiway_threads(num_threads);
+  std::vector<std::vector<double>> var_imp_discr_threads(num_threads);
+
+  // Compute importance
+  for (uint i = 0; i < num_threads; ++i)
+  {    
+    if (importance_mode == MUWIMP_MULTIWAY || importance_mode == MUWIMP_BOTH)
+    {
+       var_imp_multiway_threads[i].resize(metricind.size(), 0);
+    }
+    if (importance_mode == MUWIMP_DISCR || importance_mode == MUWIMP_BOTH)
+    {
+       var_imp_discr_threads[i].resize(num_independent_variables, 0);
+    }
+    threads.emplace_back(&ForestProbability::computeTreeImportanceMuwInThread, this, i,
+                         std::ref(var_imp_multiway_threads[i]), std::ref(var_imp_discr_threads[i]));
+  }
+  showProgress("Computing variable importance..", num_trees);
+  for (auto &thread : threads)
+  {
+    thread.join();
+  }
+  
+#ifdef R_BUILD
+  if (aborted_threads > 0)
+  {
+    throw std::runtime_error("User interrupt.");
+  }
+#endif
+
+  // Sum thread importances
+  if (importance_mode == MUWIMP_MULTIWAY || importance_mode == MUWIMP_BOTH)
+  {
+	  var_imp_multiway.resize(metricind.size(), 0);
+  for (size_t i = 0; i < metricind.size(); ++i)
+  {
+    for (uint j = 0; j < num_threads; ++j)
+    {
+      var_imp_multiway[i] += var_imp_multiway_threads[j][i];
+    }
+  }  
+  }
+  
+    if (importance_mode == MUWIMP_DISCR || importance_mode == MUWIMP_BOTH)
+  {
+	  var_imp_discr.resize(num_independent_variables, 0);
+  for (size_t i = 0; i < num_independent_variables; ++i)
+  {
+    for (uint j = 0; j < num_threads; ++j)
+    {
+      var_imp_discr[i] += var_imp_discr_threads[j][i];
+    }
+  }  
+  }
+
+  var_imp_multiway_threads.clear();
+  var_imp_discr_threads.clear();
+
+  if (importance_mode == MUWIMP_MULTIWAY || importance_mode == MUWIMP_BOTH)
+  {
+  for (size_t i = 0; i < var_imp_multiway.size(); ++i)
+  {
+    var_imp_multiway[i] /= num_trees;
+  }
+  }
+
+  if (importance_mode == MUWIMP_DISCR || importance_mode == MUWIMP_BOTH)
+  {
+  for (size_t i = 0; i < var_imp_discr.size(); ++i)
+  {
+    var_imp_discr[i] /= num_trees;
+  }
+  }
+
+}
+
+// Multi Forests: Compute variable importance in one thread.
+void ForestProbability::computeTreeImportanceMuwInThread(uint thread_idx, std::vector<double>& importance_multiway,
+     std::vector<double>& importance_discr) {
+  if (thread_ranges.size() > thread_idx + 1) {
+    for (size_t i = thread_ranges[thread_idx]; i < thread_ranges[thread_idx + 1]; ++i) {
+      if (auto treeClassPtr = dynamic_cast<TreeProbability*>(trees[i].get())) {
+        treeClassPtr->computeImportanceMuw(importance_multiway, importance_discr);
+      }
+
+      // Check for user interrupt
+#ifdef R_BUILD
+      if (aborted) {
+        std::unique_lock<std::mutex> lock(mutex);
+        ++aborted_threads;
+        condition_variable.notify_one();
+        return;
+      }
+#endif
+
+      // Increase progress by 1 tree
+      std::unique_lock<std::mutex> lock(mutex);
+      ++progress;
+      condition_variable.notify_one();
+    }
+  }
 }
 
 // #nocov end

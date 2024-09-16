@@ -40,45 +40,6 @@ void Data::addSnpData(unsigned char* snp_data, size_t num_cols_snp) {
 }
 
 // #nocov start
-bool Data::loadFromFile(std::string filename) {
-
-  bool result;
-
-  // Open input file
-  std::ifstream input_file;
-  input_file.open(filename);
-  if (!input_file.good()) {
-    throw std::runtime_error("Could not open input file.");
-  }
-
-  // Count number of rows
-  size_t line_count = 0;
-  std::string line;
-  while (getline(input_file, line)) {
-    ++line_count;
-  }
-  num_rows = line_count - 1;
-  input_file.close();
-  input_file.open(filename);
-
-  // Check if comma, semicolon or whitespace seperated
-  std::string header_line;
-  getline(input_file, header_line);
-
-  // Find out if comma, semicolon or whitespace seperated and call appropriate method
-  if (header_line.find(",") != std::string::npos) {
-    result = loadFromFileOther(input_file, header_line, ',');
-  } else if (header_line.find(";") != std::string::npos) {
-    result = loadFromFileOther(input_file, header_line, ';');
-  } else {
-    result = loadFromFileWhitespace(input_file, header_line);
-  }
-
-  externalData = false;
-  input_file.close();
-  return result;
-}
-
 bool Data::loadFromFileWhitespace(std::ifstream& input_file, std::string header_line) {
 
   // Read header

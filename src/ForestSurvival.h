@@ -54,11 +54,7 @@ private:
   void allocatePredictMemory() override;
   void predictInternal(size_t sample_idx) override;
   void computePredictionErrorInternal() override;
-  void writeOutputInternal() override;
-  void writeConfusionFile() override;
-  void writePredictionFile() override;
   void saveToFileInternal(std::ofstream& outfile) override;
-  void loadFromFileInternal(std::ifstream& infile) override;
 
   size_t status_varID;
   std::vector<double> unique_timepoints;

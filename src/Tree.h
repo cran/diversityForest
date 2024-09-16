@@ -42,14 +42,16 @@ public:
       bool sample_with_replacement, bool memory_saving_splitting, SplitRule splitrule,
       std::vector<double>* case_weights, std::vector<size_t>* manual_inbag, bool keep_inbag,
       std::vector<double>* sample_fraction, double alpha, double minprop, bool holdout, uint num_random_splits,
-      uint max_depth, std::vector<std::vector<size_t>>* promispairs, uint eim_mode, uint divfortype); // asdf
+      uint max_depth, std::vector<std::vector<size_t>>* promispairs, uint eim_mode, uint divfortype,
+	  std::vector<size_t>* metricind);
 
   virtual void allocateMemory() = 0;
 
-  void grow(std::vector<double>* variable_importance);
+  virtual void grow(std::vector<double>* variable_importance);
 
   void predict(const Data* prediction_data, bool oob_prediction);
   void predictMultivariate(const Data *prediction_data, bool oob_prediction);
+  virtual void predictMuw(const Data* prediction_data, bool oob_prediction);
 
   void computePermutationImportance(std::vector<double>& forest_importance, std::vector<double>& forest_variance);
   void computePermutationImportanceMultivariate(std::vector<double> &forest_univ, std::vector<double> &forest_bivpooled, 
@@ -62,6 +64,7 @@ public:
   const std::vector<std::vector<size_t>>& getChildNodeIDs() const {
     return child_nodeIDs;
   }
+  
   const std::vector<double>& getSplitValues() const {
     return split_values;
   }
@@ -104,7 +107,7 @@ protected:
   void drawSplitsMultivariate(size_t nodeID, size_t n_triedsplits, std::vector<size_t>& sampled_split_types, std::vector<std::vector<size_t>>& sampled_split_multvarIDs, std::vector<std::vector<std::vector<bool>>>& sampled_split_directs, std::vector<std::vector<std::vector<double>>>& sampled_split_multvalues); // asdf
   bool IsInRectangle(const Data* data, size_t sampleID, size_t split_type, std::vector<size_t>& split_multvarID, std::vector<std::vector<bool>>& split_direct, std::vector<std::vector<double>>& split_multvalue); // asdf	  
   
-  bool splitNode(size_t nodeID);
+  virtual bool splitNode(size_t nodeID);
   virtual bool splitNodeInternal(size_t nodeID, std::vector<size_t>& possible_split_varIDs) = 0;
   virtual bool splitNodeUnivariateInternal(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) = 0; // asdf
   virtual bool splitNodeMultivariateInternal(size_t nodeID, std::vector<size_t> sampled_split_types, std::vector<std::vector<size_t>> sampled_split_multvarIDs, std::vector<std::vector<std::vector<bool>>> sampled_split_directs, std::vector<std::vector<std::vector<double>>> sampled_split_multvalues) = 0; // asdf
@@ -192,6 +195,9 @@ protected:
   std::vector<std::vector<size_t>>* promispairs;
   uint eim_mode;
   uint divfortype;
+  
+  // Multi forests: Vector of the indices of the metric variables.
+  std::vector<size_t>* metricind;
   
   // Holdout mode
   bool holdout;

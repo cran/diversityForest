@@ -346,10 +346,7 @@ bool TreeRegression::findBestSplitUnivariate(size_t nodeID, std::vector<std::pai
     }
     
   }
-  
-  ///Rcpp::Rcout << "best_varID: " << best_varID << std::endl;
-  // std::copy(begin(class_counts_right), end(class_counts_right), std::ostream_iterator<size_t>(std::cout, " "));
-  
+
   // Stop if no good split found
   if (best_decrease < 0) {
     return true;

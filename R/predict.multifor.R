@@ -21,40 +21,31 @@
 #
 # -------------------------------------------------------------------------------
 
-##' Prediction with new data and a saved forest from \code{\link{divfor}}.
+##' Prediction with new data and a saved forest from \code{\link{multifor}}.
 ##' 
 ##' This package is a fork of the R package 'ranger' that implements random forests using an
 ##' efficient C++ implementation. More precisely, 'diversityForest' was written by modifying
-##' the code of 'ranger', version 0.11.0. Therefore, details on further functionalities
-##' of the code that are not presented in the help pages of 'diversityForest' are found
-##' in the help pages of 'ranger' (version 0.11.0). The code in the example sections of \code{\link{divfor}} and \code{\link{tunedivfor}} can be
-##' used as a template for all common application scenarios with respect to classification,
-##' regression and survival prediction using univariable, binary splitting. Some function 
-##' arguments adopted from the 'ranger' package may not be useable with diversity forests
-##' (for the current package version).
+##' the code of 'ranger', version 0.11.0. 
 ##'
-##' @title Diversity Forest prediction
-##' @param object \code{divfor} object.
-##' @param data New test data of class \code{data.frame} or \code{gwaa.data} (GenABEL).
-##' @param predict.all Return individual predictions for each tree instead of aggregated predictions for all trees. Return a matrix (sample x tree) for classification and regression, a 3d array for probability estimation (sample x class x tree) and survival (sample x time x tree).
+##' @title Multi forest prediction
+##' @param object \code{multifor} object.
+##' @param data New test data of class \code{data.frame}.
+##' @param predict.all Return individual predictions for each tree instead of aggregated predictions for all trees. Return a matrix (sample x tree) for classification, a 3d array for probability estimation (sample x class x tree).
 ##' @param num.trees Number of trees used for prediction. The first \code{num.trees} in the forest are used.
-##' @param type Type of prediction. One of 'response', 'se', 'terminalNodes', 'quantiles' with default 'response'. See below for details.
-##' @param se.method Method to compute standard errors. One of 'jack', 'infjack' with default 'infjack'. Only applicable if type = 'se'. See below for details.
-##' @param quantiles Vector of quantiles for quantile prediction. Set \code{type = 'quantiles'} to use.
+##' @param type Type of prediction. If "response" (default), the predicted classes (classification) or 
+##' predicted probabilities (probability estimation) are returned. If "terminalNodes", the IDs of the terminal 
+##' node in each tree for each observation in the given dataset are returned.
 ##' @param seed Random seed. Default is \code{NULL}, which generates the seed from \code{R}. Set to \code{0} to ignore the \code{R} seed. The seed is used in case of ties in classification mode.
 ##' @param num.threads Number of threads. Default is number of CPUs available.
 ##' @param verbose Verbose output on or off.
 ##' @param ... further arguments passed to or from other methods.
-##' @return Object of class \code{divfor.prediction} with elements
+##' @return Object of class \code{multifor.prediction} with elements
 ##'   \tabular{ll}{
 ##'       \code{predictions}    \tab Predicted classes/values (only for classification and regression)  \cr
-##'       \code{unique.death.times} \tab Unique death times (only for survival). \cr
-##'       \code{chf} \tab Estimated cumulative hazard function for each sample (only for survival). \cr
-##'       \code{survival} \tab Estimated survival function for each sample (only for survival). \cr
 ##'       \code{num.trees}   \tab Number of trees. \cr
 ##'       \code{num.independent.variables} \tab Number of independent variables. \cr
-##'       \code{treetype}    \tab Type of forest/tree. Classification, regression or survival. \cr
-##'       \code{num.samples}     \tab Number of samples.
+##'       \code{num.samples}     \tab Number of samples. \cr
+##'       \code{treetype}    \tab Type of forest/tree. Classification or probability.
 ##'   }
 ##' @references
 ##' \itemize{
@@ -63,74 +54,36 @@
 ##'   \item Wager, S., Hastie T., & Efron, B. (2014). Confidence Intervals for Random Forests: The Jackknife and the Infinitesimal Jackknife. Journal of Machine Learning Research 15:1625-1651.
 ##'   \item Meinshausen (2006). Quantile Regression Forests. Journal of Machine Learning Research 7:983-999.
 ##'   }
-##' @seealso \code{\link{divfor}}
+##' @seealso \code{\link{multifor}}
 ##' @author Marvin N. Wright
 ##' @export
-predict.divfor <- function(object, data = NULL, predict.all = FALSE,
+predict.multifor <- function(object, data = NULL, predict.all = FALSE,
                            num.trees = object$num.trees,
-                           type = "response", se.method = "infjack",
-                           quantiles = c(0.1, 0.5, 0.9), 
-                           seed = NULL, num.threads = NULL,
+                           type = "response", seed = NULL, num.threads = NULL,
                            verbose = TRUE, ...) {
   forest <- object$forest
   if (is.null(forest)) {
-    stop("Error: No saved forest in divfor object. Please set write.forest to TRUE when calling divfor.")
+    stop("Error: No saved forest in multifor object. Please set write.forest to TRUE when calling multifor.")
   }
   if (object$importance.mode %in% c("impurity_corrected", "impurity_unbiased")) {
     warning("Forest was grown with 'impurity_corrected' variable importance. For prediction it is advised to grow another forest without this importance setting.")
   }
-  
-  if (type == "quantiles") {
-    ## Quantile prediction
-    if (object$treetype != "Regression") {
-      stop("Error: Quantile prediction implemented only for regression outcomes.")
-    }
-    if (is.null(object$random.node.values)) {
-      stop("Error: Set quantreg=TRUE in divfor(...) for quantile prediction.")
-    }
-    
-    if (is.null(data)) {
-      ## OOB prediction
-      if (is.null(object$random.node.values.oob)) {
-        stop("Error: Set keep.inbag=TRUE in divfor(...) for out-of-bag quantile prediction or provide new data in predict(...).")
-      }
-      node.values <- object$random.node.values.oob
-    } else {
-      ## New data prediction
-      terminal.nodes <- predict(object, data, type = "terminalNodes")$predictions + 1
-      node.values <- 0 * terminal.nodes
-      for (tree in 1:num.trees) {
-        node.values[, tree] <- object$random.node.values[terminal.nodes[, tree], tree]
-      }
-    }
-    
-    ## Prepare results
-    result <- list(num.samples = nrow(node.values),
-                   treetype = object$treetype,
-                   num.independent.variables = object$num.independent.variables,
-                   num.trees = num.trees)
-    class(result) <- "divfor.prediction"
 
-    ## Compute quantiles of distribution
-    result$predictions <- t(apply(node.values, 1, quantile, quantiles, na.rm=TRUE))
-    if (nrow(result$predictions) != result$num.samples) {
-      ## Fix result for single quantile
-      result$predictions <- t(result$predictions)
-    }
-    colnames(result$predictions) <- paste("quantile=", quantiles)
-    result
-  } else {
+  if (!(type %in% c("response", "terminalNodes")))
+    stop("Error: 'type' must either be 'response' or 'terminalNodes'.")
+  
     ## Non-quantile prediction
     if (is.null(data)) {
      stop("Error: Argument 'data' is required for non-quantile prediction.") 
     }
-    predict(forest, data, predict.all, num.trees, type, se.method, seed, num.threads, verbose, object$inbag.counts, ...)
-  }
+    predict(forest, data, predict.all, num.trees, type, se.method = "infjack", seed, num.threads, verbose, object$inbag.counts, ...)
+
+
 }
 
 # Author: Marvin N. Wright, Roman Hornung
-#' @export
-predict.divfor.forest <- function(object, data, predict.all = FALSE,
+##' @export
+predict.multifor.forest <- function(object, data, predict.all = FALSE,
                                   num.trees = object$num.trees, 
                                   type = "response", se.method = "infjack",
                                   seed = NULL, num.threads = NULL,
@@ -138,37 +91,29 @@ predict.divfor.forest <- function(object, data, predict.all = FALSE,
 
   ## GenABEL GWA data
   if ("gwaa.data" %in% class(data)) {
-    snp.names <- snp.names(data)
-    snp.data <- data@gtdata@gtps@.Data
-    data <- data@phdata[, -1, drop = FALSE]
-    gwa.mode <- TRUE
-    variable.names <- c(names(data), snp.names)
-  } else {
-    snp.data <- as.matrix(0)
-    gwa.mode <- FALSE
-    variable.names <- colnames(data)
+    stop("Error: Ordering of SNPs currently not implemented for multi forests.")
   }
 
+    variable.names <- colnames(data)
+
   ## Check forest argument
-  if (!inherits(object, "divfor.forest")) {
+  if (!inherits(object, "multifor.forest")) {
     stop("Error: Invalid class of input object.")
   } else {
     forest <- object
   }
+  # DIE OBJEKTE VON FOREST NOCH ABAENDERN UND DANN DAS HIER 
+  # ENTSPRECHEND AUCH AENDERN.
   if (is.null(forest$dependent.varID) || is.null(forest$num.trees) ||
         is.null(forest$child.nodeIDs) || is.null(forest$split.varIDs) ||
         is.null(forest$split.values) || is.null(forest$independent.variable.names) ||
         is.null(forest$treetype)) {
     stop("Error: Invalid forest object.")
   }
-  if (forest$treetype == "Survival" && (is.null(forest$status.varID)  ||
-                                        is.null(forest$chf) || is.null(forest$unique.death.times))) {
-    stop("Error: Invalid forest object.")
-  }
   
-  ## Check for old divfor version
+  ## Check for old ranger version
   if (length(forest$child.nodeIDs) != forest$num.trees || length(forest$child.nodeIDs[[1]]) != 2) {
-    stop("Error: Invalid forest object. Is the forest grown in divfor version <0.3.9? Try to predict with the same version the forest was grown.")
+    stop("Error: Invalid forest object. Is the forest grown in ranger version <0.3.9? Try to predict with the same version the forest was grown.")
   }
   
   ## Prediction type
@@ -176,8 +121,6 @@ predict.divfor.forest <- function(object, data, predict.all = FALSE,
     prediction.type <- 1
   } else if (type == "terminalNodes") {
     prediction.type <- 2
-  } else if (type == "quantiles") {
-    stop("Error: Apply predict() to the divfor object instead of the $forest object to predict quantiles.")
   } else {
     stop("Error: Invalid value for 'type'. Use 'response', 'se', 'terminalNodes', or 'quantiles'.")
   }
@@ -196,7 +139,7 @@ predict.divfor.forest <- function(object, data, predict.all = FALSE,
   
   ## Type "se" requires keep.inbag=TRUE
   if (type == "se" && is.null(inbag.counts)) {
-    stop("Error: No saved inbag counts in divfor object. Please set keep.inbag=TRUE when calling divfor.")
+    stop("Error: No saved inbag counts in multifor object. Please set keep.inbag=TRUE when calling divfor.")
   }
   
   ## Set predict.all if type is "se"
@@ -205,34 +148,6 @@ predict.divfor.forest <- function(object, data, predict.all = FALSE,
   }
 
   ## Create final data
-  if (forest$treetype == "Survival") {
-    if (forest$dependent.varID > 0 && forest$status.varID > 1) {
-      if (ncol(data) == length(forest$independent.variable.names)+2) {
-        ## If alternative interface used and same data structure, don't subset data
-        data.used <- data
-      } else if (ncol(data) == length(forest$independent.variable.names)) {
-        data.selected <- data[, forest$independent.variable.names, drop = FALSE]
-        data.used <- cbind(0, 0, data.selected)
-        variable.names <- c("time", "status", forest$independent.variable.names)
-        forest$dependent.varID <- 0
-        forest$status.varID <- 1
-      } else {
-        stop("Invalid prediction data. Include both time and status variable or none.")
-      }
-    } else {
-      ## If formula interface used, subset data
-      data.selected <- data[, forest$independent.variable.names, drop = FALSE]
-
-      ## Arange data as in original data
-      data.used <- cbind(0, 0, data.selected)
-      variable.names <- c("time", "status", forest$independent.variable.names)
-    }
-
-  ## Index of no-recode variables
-  idx.norecode <- c(-(forest$dependent.varID+1), -(forest$status.varID+1))
-
-  } else {
-    ## No survival
     if (ncol(data) == length(forest$independent.variable.names)+1 && forest$dependent.varID > 0) {
       ## If alternative interface used and same data structure, don't subset data
       data.used <- data
@@ -259,7 +174,6 @@ predict.divfor.forest <- function(object, data, predict.all = FALSE,
 
     ## Index of no-recode variables
     idx.norecode <- -(forest$dependent.varID+1)
-  }
 
   ## Recode characters
   if (!is.matrix(data.used) && !inherits(data.used, "Matrix")) {
@@ -284,12 +198,6 @@ predict.divfor.forest <- function(object, data, predict.all = FALSE,
     data.final <- data.used
   } else {
     data.final <- data.matrix(data.used)
-  }
-  
-
-  ## If gwa mode, add snp variable names
-  if (gwa.mode) {
-    variable.names <- c(variable.names, snp.names)
   }
 
   ## Check missing values
@@ -318,10 +226,6 @@ predict.divfor.forest <- function(object, data, predict.all = FALSE,
 
   if (forest$treetype == "Classification") {
     treetype <- 1
-  } else if (forest$treetype == "Regression") {
-    treetype <- 3
-  } else if (forest$treetype == "Survival") {
-    treetype <- 5
   } else if (forest$treetype == "Probability estimation") {
     treetype <- 9
   } else {
@@ -374,18 +278,19 @@ predict.divfor.forest <- function(object, data, predict.all = FALSE,
     use.sparse.data <- FALSE
   }
   
-  ## Call divfor
+  ## Call C++:
   result <- divforCpp(treetype, dependent.variable.name, data.final, variable.names, mtry,
                       num.trees, verbose, seed, num.threads, write.forest, importance,
                       min.node.size, split.select.weights, use.split.select.weights,
                       always.split.variables, use.always.split.variables,
-                      status.variable.name, prediction.mode, forest, snp.data, replace, probability,
+                      status.variable.name, prediction.mode, forest, snp_data=as.matrix(0), replace, probability,
                       unordered.factor.variables, use.unordered.factor.variables, save.memory, splitrule,
                       case.weights, use.case.weights, class.weights, 
                       predict.all, keep.inbag, sample.fraction, alpha, minprop, holdout, 
                       prediction.type, num.random.splits, sparse.data, use.sparse.data,
-                      order.snps, oob.error, max.depth, inbag, use.inbag, nsplits, npairs=0, proptry, divfortype=1, 
-					  promispairs=list(0,0), eim_mode=0, metricind=numeric(0)) ## asdf
+                      order.snps, oob.error, max.depth, inbag, use.inbag, nsplits, npairs=0, 
+					  proptry, divfortype=3, promispairs=list(0,0), eim_mode=0, 
+					  metricind=numeric(0)) ## asdf
 
   if (length(result) == 0) {
     stop("User interrupt or internal error.")
@@ -396,7 +301,7 @@ predict.divfor.forest <- function(object, data, predict.all = FALSE,
   result$treetype <- forest$treetype
 
   if (predict.all) {
-    if (forest$treetype %in% c("Classification", "Regression")) {
+    if (forest$treetype=="Classification") {
       if (is.list(result$predictions)) {
         result$predictions <- do.call(rbind, result$predictions)
       } else {
@@ -510,6 +415,6 @@ predict.divfor.forest <- function(object, data, predict.all = FALSE,
     }
   }
 
-  class(result) <- "divfor.prediction"
+  class(result) <- "multifor.prediction"
   return(result)
 }

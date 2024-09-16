@@ -266,7 +266,7 @@
 ##' 
 ##' # Construct interaction forest on training data:
 ##' # NOTE again: num.trees = 20 is specified too small for practical purposes.
-##' modelcattrain <- interactionfor(dependent.variable.name = "type", data = zoo, 
+##' modelcattrain <- interactionfor(dependent.variable.name = "type", data = zoo.train, 
 ##'                                 importance = "none", num.trees = 20)
 ##' # NOTE: Because we are only interested in prediction here, we do not
 ##' # calculate EIM values (by setting importance = "none"), because this
@@ -962,7 +962,8 @@ interactionfor <- function(formula = NULL, data = NULL, importance = "both", num
                       save.memory, splitrule.num, case.weights, use.case.weights, class.weights, 
                       predict.all, keep.inbag, sample.fraction, alpha=0.5, minprop=0.1, holdout, prediction.type, 
                       num.random.splits, sparse.data, use.sparse.data, order.snps, oob.error, max.depth.eim, 
-                      inbag, use.inbag, nsplits=30, npairs, proptry=1, divfortype=2, promispairs, eim.mode)
+                      inbag, use.inbag, nsplits=30, npairs, proptry=1, divfortype=2, promispairs, eim.mode,
+					  metricind=numeric(0))
   
   if (importance != "none" & simplify.large.n & maxdepthnull & nrow(data) > 1000) {
     importance.mode.forest <- 0
@@ -975,7 +976,8 @@ interactionfor <- function(formula = NULL, data = NULL, importance = "both", num
                         save.memory, splitrule.num, case.weights, use.case.weights, class.weights, 
                         predict.all, keep.inbag, sample.fraction, alpha=0.5, minprop=0.1, holdout, prediction.type, 
                         num.random.splits, sparse.data, use.sparse.data, order.snps, oob.error, max.depth, 
-                        inbag, use.inbag, nsplits=30, npairs, proptry=1, divfortype=2, promispairs, eim.mode)
+                        inbag, use.inbag, nsplits=30, npairs, proptry=1, divfortype=2, promispairs, eim.mode,
+						metricind=numeric(0))
     result$forest <- resultforest$forest
     result$num.trees <- resultforest$num.trees
   }

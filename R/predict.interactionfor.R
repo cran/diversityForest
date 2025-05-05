@@ -383,7 +383,7 @@ predict.interactionfor.forest <- function(object, data, predict.all = FALSE,
                       predict.all, keep.inbag, sample.fraction, alpha, minprop, holdout, 
                       prediction.type, num.random.splits, sparse.data, use.sparse.data,
                       order.snps, oob.error, max.depth, inbag, use.inbag, nsplits, npairs, proptry, divfortype=2, 
-					  promispairs=list(0,0), eim.mode, metricind=numeric(0)) ## asdf
+					  promispairs=list(0,0), eim.mode) ## asdf
 
   if (length(result) == 0) {
     stop("User interrupt or internal error.")

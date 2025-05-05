@@ -52,6 +52,18 @@ public:
     this->class_weights = class_weights;
   }
   
+  std::vector<std::vector<size_t>> getSplitMuwVarIDs() {
+    std::vector<std::vector<size_t>> result;
+	for (auto &tree : trees) {
+      TreeProbability *treeProb = dynamic_cast<TreeProbability *>(tree.get());
+      if (treeProb)
+      {
+        result.push_back(treeProb->getSplitMuwVarIDs());
+      }
+    }
+    return result;
+  }
+  
   std::vector<std::vector<std::vector<double>>> getSplitMuwValues() {
     std::vector<std::vector<std::vector<double>>> result;
     for (auto &tree : trees) {
@@ -76,20 +88,8 @@ public:
     return result;
   }
   
-  std::vector<std::vector<size_t>> getMuwInds() {
-    std::vector<std::vector<size_t>> result;
-    for (auto &tree : trees) {
-      TreeProbability *treeProb = dynamic_cast<TreeProbability *>(tree.get());
-      if (treeProb)
-      {
-        result.push_back(treeProb->getMuwInds());
-      }
-    }
-    return result;
-  }
-
   const std::vector<double>& getVariableImportanceMuwMultiway() const {
-    return var_imp_multiway;
+    return var_imp_classfoc;
   }
   
   const std::vector<double>& getVariableImportanceMuwDiscr() const {
@@ -106,7 +106,7 @@ protected:
 
   void computeImportanceMuw() override;
 
-  void computeTreeImportanceMuwInThread(uint thread_idx, std::vector<double>& importance_multiway,
+  void computeTreeImportanceMuwInThread(uint thread_idx, std::vector<double>& importance_classfoc,
      std::vector<double>& importance_discr);
 
   // Classes of the dependent variable and classIDs for responses
@@ -118,7 +118,7 @@ protected:
   std::vector<double> class_weights;
 
   // Variable importance for multiway and binary splits:
-  std::vector<double> var_imp_multiway;
+  std::vector<double> var_imp_classfoc;
   std::vector<double> var_imp_discr;
 
 private:

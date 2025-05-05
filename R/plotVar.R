@@ -34,7 +34,14 @@
 ##' @param x_label Optional. The label of the x-axis.
 ##' @param y_label Optional. The label (heading) of the legend that differentiates the categories of \code{y}.
 ##' @param plot_title Optional. The title of the plot.
-##' @return A ggplot2 plot.
+##' @param plotit This states whether the plots are actually plotted or merely returned as \code{ggplot} objects. Default is \code{TRUE}.
+##' @return A list returned invisibly containing:
+##' \itemize{
+##'   \item Only the element \code{dens_pl} if \code{plot_type = "density"};
+##'   \item Only the element \code{boxplot_pl} if \code{plot_type = "boxplot"};
+##'   \item The elements \code{dens_pl}, \code{boxplot_pl}, and \code{combined_pl} if \code{plot_type = "both"}.
+##' }
+##' All returned plots are \code{ggplot2} objects, with \code{combined_pl} being a \code{patchwork} object.
 ##' @examples
 ##' \dontrun{
 ##' 
@@ -86,7 +93,8 @@
 ##' p <- plotVar(x = ctg$Mean, y = ctg$Tendency, plot_type = "density",
 ##'              x_label = "Mean of the histogram ('Mean')", 
 ##'              y_label = "Histogram tendency ('Tendency')", 
-##'              plot_title = "Relationship between 'Mean' and 'Tendency'") +
+##'              plot_title = "Relationship between 'Mean' and 'Tendency'",
+##'              plotit = FALSE)$dens_pl +
 ##'   scale_color_manual(values = brewer.pal(n = 3, name = "Set2"),
 ##'                      labels = c("left asymmetric", "symmetric", 
 ##'                                 "right asymmetric")) +
@@ -99,49 +107,116 @@
 ##' ## # Save as PDF:
 ##' ## ggsave(file="mypathtofolder/FigureXY1.pdf", width=10, height=7)
 ##' 
+##' 
+##' 
+##' ## Further customizations:
+##' 
+##' # Create plot without plotting it:
+##' 
+##' plotobj <- plotVar(x = ctg$Mean, y = ctg$Tendency, 
+##'                    x_label = "Mean of the histogram ('Mean')", 
+##'                    y_label = "Histogram tendency ('Tendency')", 
+##'                    plotit = FALSE)
+##' 
+##' 
+##' # Customize the density plot:
+##' 
+##' dens_pl <- plotobj$dens_pl + theme(legend.position = "inside", 
+##'                                    legend.position.inside = c(0.25, 0.9), 
+##'                                    legend.title = element_text(size = 16), 
+##'                                    legend.text = element_text(size = 12), 
+##'                                    axis.title = element_text(size=16), 
+##'                                    axis.text = element_text(size=12)) + 
+##'   ylab("(Scaled) density")
+##' 
+##' 
+##' # Customize the boxplot:
+##' 
+##' boxplot_pl <- plotobj$boxplot_pl + 
+##'   theme(axis.text.x = element_text(color = "transparent"), 
+##'         axis.ticks.x = element_line(color = "transparent"), 
+##'         axis.title = element_text(size=16), 
+##'         axis.text = element_text(size=12))
+##' 
+##' 
+##' # Create a title with increased font size:
+##' 
+##' library("grid")
+##' title_grob <- textGrob(
+##'   "Title of the combined plot", 
+##'   gp = gpar(fontsize = 18) 
+##' )
+##' 
+##' 
+##' # Arrange plots with title:
+##' 
+##' library("gridExtra")
+##' p <- arrangeGrob(
+##'   dens_pl, boxplot_pl, 
+##'   top = title_grob,
+##'   nrow = 1
+##' )
+##' p
+##' 
+##' ## # Save as PDF:
+##' ## ggsave(file="mypathtofolder/FigureXY2.pdf", p, width=16, height=7)
+##' 
 ##' }
 ##'
 ##' @author Roman Hornung
 ##' @references
 ##' \itemize{
-##'   \item Hornung, R., Hapfelmeier, A. (2024). Multi forests: Variable importance for multi-class outcomes. arXiv:2409.08925, <\doi{10.48550/arXiv.2409.08925}>.
 ##'   \item Hornung, R. (2022). Diversity forests: Using split sampling to enable innovative complex split procedures in random forests. SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
 ##'   }
 ##' @seealso \code{\link{plotMcl}}, \code{\link{plot.multifor}}
 ##' @encoding UTF-8
 ##' @importFrom ggplot2 ggplot aes geom_line geom_rug theme_bw theme labs ggtitle xlab ylab scale_x_continuous scale_y_continuous scale_color_manual scale_linetype_manual geom_boxplot element_text
 ##' @export
-plotVar <- function(x, y, plot_type=c("both", "density", "boxplot")[1], x_label="", y_label="", plot_title="") {
+plotVar <- function(x, y, plot_type=c("both", "density", "boxplot")[1], x_label="", y_label="", plot_title="", plotit=TRUE) {
   
   # If plot_type=="density", create a density plot:
-  if (plot_type=="density")
-    return(plotVarDensity(x=x, y=y, x_label=x_label, y_label=y_label, plot_title=plot_title)$p)
-  
-  # If plot_type=="boxplot", create a boxplot:
-  if (plot_type=="boxplot")
-    return(plotVarBoxplot(x=x, y=y, x_label=x_label, y_label=y_label, plot_title=plot_title))
-  
-  # If plot_type=="both", create both a density plot a boxplot:
-  if (plot_type=="both") {
+  if (plot_type=="density") {
+    dens_pl <- plotVarDensity(x=x, y=y, x_label=x_label, y_label=y_label, plot_title=plot_title)$p
+    if (plotit) {
+      print(dens_pl)
+    }
+    res <- list(dens_pl=dens_pl)
+    invisible(res)
+  } else if (plot_type=="boxplot") {
+    # If plot_type=="boxplot", create a boxplot:
+    boxplot_pl <- plotVarBoxplot(x=x, y=y, x_label=x_label, y_label=y_label, plot_title=plot_title)
+    if (plotit) {
+      print(boxplot_pl)
+    }
+    res <- list(boxplot_pl=boxplot_pl)
+    invisible(res)
+  } else if (plot_type=="both") {
+    # If plot_type=="both", create both a density plot a boxplot:
     # Create the density plot:
     dens_res <- plotVarDensity(x=x, y=y, x_label=x_label, y_label=y_label, plot_title="")
+    dens_pl <- dens_res$p
+    boxplot_pl <- plotVarBoxplot(x=x, y=y, x_label=x_label, y_label=y_label, plot_title="", plotres=dens_res$plotres)
     # Add the boxplot using the same colors and line types as the density plot (through 'plotres=dens_res$plotres'):
-    p <- patchwork::wrap_plots(dens_res$p, plotVarBoxplot(x=x, y=y, x_label=x_label, y_label=y_label, plot_title="", plotres=dens_res$plotres), ncol = 2)
-    p <- p +
+    combined_pl <- patchwork::wrap_plots(dens_pl, boxplot_pl, ncol = 2)
+    combined_pl <- combined_pl +
       patchwork::plot_annotation(
         title = plot_title,
         theme = ggplot2::theme(
           plot.title = ggplot2::element_text(hjust = 0.5)
         )
       )
-    return(p)
+    if (plotit) {
+      print(combined_pl)
+    }
+    res <- list(combined_pl=combined_pl, dens_pl=dens_pl, boxplot_pl=boxplot_pl)
+    invisible(res)
   }
   
 }
 
 
 plotVarDensity <- function(x, y, x_label="", y_label="", plot_title="") {
-
+  
   classtab <- table(y)
   
   # The densities are plotted only for classes with at least two observations:

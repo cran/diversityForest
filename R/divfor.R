@@ -741,8 +741,7 @@ divfor <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
                       save.memory, splitrule.num, case.weights, use.case.weights, class.weights, 
                       predict.all, keep.inbag, sample.fraction, alpha, minprop, holdout, prediction.type, 
                       num.random.splits, sparse.data, use.sparse.data, order.snps, oob.error, max.depth, 
-                      inbag, use.inbag, nsplits, npairs=0, proptry, divfortype=1, promispairs=list(0,0), eim_mode=0, 
-					  metricind=numeric(0))
+                      inbag, use.inbag, nsplits, npairs=0, proptry, divfortype=1, promispairs=list(0,0), eim_mode=0)
   
   if (length(result) == 0) {
     stop("User interrupt or internal error.")

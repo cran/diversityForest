@@ -10,9 +10,9 @@
 \arguments{
 \item{x}{Object of class \code{multifor}.}
 
-\item{plot_type}{Plot type, one of the following: "both" (the default), "density", "boxplot".  If "density", \code{"density"} plots are produced, if "boxplot", \code{"boxplot"} plots are produced, and if "both", both \code{"density"} plots and \code{"boxplot"} plots are produced. See the 'Details' section of \code{\link{plotMcl}} for details.}
+\item{plot_type}{Plot type, one of the following: "both" (the default), "density", "boxplot".  If "density", kernel density estimate-based plots are produced, if "boxplot", boxplot plots are produced, and if "both", both kernel density estimate-based plots and boxplot plots are produced. See the 'Details' section of \code{\link{plotMcl}} for details.}
 
-\item{num_best}{The number of variables with largest multi-class VIM values to plot. Default is 5.}
+\item{num_best}{The number of variables with largest class-focused VIM values to plot. Default is 5.}
 
 \item{...}{Further arguments passed to or from other methods.}
 }
@@ -21,22 +21,18 @@ A ggplot2 plot.
 }
 \description{
 Plot function for \code{multifor} objects that allows to obtain a first overview of the result of the
-multi-class VIM analysis. This function visualises the distribution of the multi-class VIM values
+class-focused VIM analysis. This function visualises the distribution of the class-focused VIM values
 together with that of the corresponding discriminatory VIM values and
 the estimated dependency structures of the multi-class outcome on the variables 
-with largest multi-class VIM values. These estimated dependency structures are visualised
-using density plots and/or boxplots.
+with largest class-focused VIM values. These estimated dependency structures are visualised
+using kernel density estimate-based plots and/or boxplots.
 }
 \details{
-In the plot showing the distribution of the multi-class VIM values along with 
+In the plot showing the distribution of the class-focused VIM values along with 
 that of the discriminatory VIM values, the discriminatory VIM values are 
-normalized to make them comparable to the multi-class VIM values. This is 
+normalized to make them comparable to the class-focused VIM values. This is 
 achieved by dividing the discriminatory VIM values by their mean and multiplying 
-it by that of the multi-class VIM values. Although the discriminatory VIM 
-values are computed for all variables, only those variables for which the 
-multi-class VIM values were computed are included in this analysis (i.e., 
-all variables that have at least as many unique values as there are classes
-in the outcome variable).\cr
+it by that of the class-focused VIM values.\cr
 For details on the plots of the estimated dependency structures of the 
 multi-class outcome on the variables, see \code{\link{plotMcl}}.
 The latter function allows to visualise these estimated dependency structures
@@ -57,7 +53,7 @@ set.seed(1234)
 
 
 
-## Construct multi forest and calculate multi-class and discriminatory VIM values:
+## Construct random forest and calculate class-focused and discriminatory VIM values:
 
 data(hars)
 model <- multifor(dependent.variable.name = "Activity", data = hars, 
@@ -72,11 +68,11 @@ model <- multifor(dependent.variable.name = "Activity", data = hars,
 
 
 ## By default the estimated class-specific distributions of the num_best=5
-## variables with the largest multi-class VIM values are plotted:
+## variables with the largest class-focused VIM values are plotted:
 
 plot(model)
 
-## Consider only the 2 variables with the largest multi-class VIM values:
+## Consider only the 2 variables with the largest class-focused VIM values:
 
 plot(model, num_best = 2)
 
@@ -85,7 +81,7 @@ plot(model, num_best = 2)
 plot(model, plot_type = "density", num_best = 2)
 plot(model, plot_type = "boxplot", num_best = 2)
 
-## Show only the plot of the distributions of the multi-class and
+## Show only the plot of the distributions of the class-focused and
 ## discriminatory VIM values:
 
 plot(model, num_best = 0)
@@ -95,7 +91,6 @@ plot(model, num_best = 0)
 }
 \references{
 \itemize{
-  \item Hornung, R., Hapfelmeier, A. (2024). Multi forests: Variable importance for multi-class outcomes. arXiv:2409.08925, <\doi{10.48550/arXiv.2409.08925}>.
   \item Hornung, R. (2022). Diversity forests: Using split sampling to enable innovative complex split procedures in random forests. SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
   }
 }

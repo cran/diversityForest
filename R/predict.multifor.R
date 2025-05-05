@@ -27,7 +27,7 @@
 ##' efficient C++ implementation. More precisely, 'diversityForest' was written by modifying
 ##' the code of 'ranger', version 0.11.0. 
 ##'
-##' @title Multi forest prediction
+##' @title Random forest prediction using a saved forest from \code{multifor}
 ##' @param object \code{multifor} object.
 ##' @param data New test data of class \code{data.frame}.
 ##' @param predict.all Return individual predictions for each tree instead of aggregated predictions for all trees. Return a matrix (sample x tree) for classification, a 3d array for probability estimation (sample x class x tree).
@@ -91,7 +91,7 @@ predict.multifor.forest <- function(object, data, predict.all = FALSE,
 
   ## GenABEL GWA data
   if ("gwaa.data" %in% class(data)) {
-    stop("Error: Ordering of SNPs currently not implemented for multi forests.")
+    stop("Error: Ordering of SNPs currently not implemented.")
   }
 
     variable.names <- colnames(data)
@@ -289,8 +289,7 @@ predict.multifor.forest <- function(object, data, predict.all = FALSE,
                       predict.all, keep.inbag, sample.fraction, alpha, minprop, holdout, 
                       prediction.type, num.random.splits, sparse.data, use.sparse.data,
                       order.snps, oob.error, max.depth, inbag, use.inbag, nsplits, npairs=0, 
-					  proptry, divfortype=3, promispairs=list(0,0), eim_mode=0, 
-					  metricind=numeric(0)) ## asdf
+					  proptry, divfortype=3, promispairs=list(0,0), eim_mode=0) ## asdf
 
   if (length(result) == 0) {
     stop("User interrupt or internal error.")

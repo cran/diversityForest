@@ -3,7 +3,7 @@
 \encoding{UTF-8}
 \name{multifor}
 \alias{multifor}
-\title{Construct a multi forest prediction rule and calculate multi-class and discriminatory variable importance scores as described in Hornung & Hapfelmeier (2024).}
+\title{Construct a random forest prediction rule and calculate class-focused and discriminatory variable importance scores.}
 \usage{
 multifor(
   formula = NULL,
@@ -36,7 +36,7 @@ multifor(
 
 \item{num.trees}{Number of trees. Default is 5000 for datasets with a maximum of 5000 observations and 1000 for datasets with more than 5000 observations.}
 
-\item{importance}{Variable importance mode, one of the following: "both" (the default), "multiclass", "discriminatory", "none". If "multiclass", multi-class VIM values are computed, if "discriminatory", discriminatory VIM values are computed, and if "both", both multi-class and discriminatory VIM values are computed. See the 'Details' section below for details.}
+\item{importance}{Variable importance mode, one of the following: "both" (the default), "class-focused", "discriminatory", "none". If "class-focused", class-focused VIM values are computed, if "discriminatory", discriminatory VIM values are computed, and if "both", both class-focused and discriminatory VIM values are computed. See the 'Details' section below for details.}
 
 \item{write.forest}{Save \code{multifor.forest} object, required for prediction. Set to \code{FALSE} to reduce memory usage if no prediction intended.}
 
@@ -79,8 +79,8 @@ Object of class \code{multifor} with elements
   \item{\code{num.independent.variables}}{Number of independent variables.}
   \item{\code{min.node.size}}{Value of minimal node size used.}
   \item{\code{mtry}}{Number of candidate variables sampled for each split.}
-  \item{\code{var.imp.multiclass}}{Multi-class VIM values. Only computed for independent variables that feature at least as many unique values as the outcome variable has classes. For other variables, the entries in the vector \code{var.imp.multiclass} will be \code{NA}.}
-  \item{\code{var.imp.discr}}{Discriminatory VIM values for all independent variables.}
+  \item{\code{class_foc_vim}}{class-focused VIM values. Only computed for independent variables that feature at least as many unique values as the outcome variable has classes. For other variables, the entries in the vector \code{var.imp.multiclass} will be \code{NA}.}
+  \item{\code{discr_vim}}{Discriminatory VIM values for all independent variables.}
   \item{\code{prediction.error}}{Overall out-of-bag prediction error. For classification this is the fraction of missclassified samples and for probability estimation the Brier score.}
   \item{\code{confusion.matrix}}{Contingency table for classes and predictions based on out-of-bag samples (classification only).}
   \item{\code{forest}}{Saved forest (If write.forest set to TRUE). Note that the variable IDs in the \code{split.varIDs} object do not necessarily represent the column number in R.}
@@ -92,35 +92,24 @@ Object of class \code{multifor} with elements
   \item{\code{plotres}}{List ob objects needed by the plot functions: \code{data} contains the data; \code{yvarname} is the name of the outcome variable.}
 }
 \description{
-Implements multi forests, a random forest variant tailored for multi-class 
-outcomes (Hornung & Hapfelmeier, 2024). Multi forests feature the multi-class 
-variable importance measure (VIM) and the discriminatory VIM.\cr 
-The \emph{multi-class VIM} measures the degree to which the variables are 
-specifically associated with one or more classes. In contrast, conventional VIMs, 
-such as the permutation VIM or the Gini importance, measure the overall influence 
-of variables regardless of their class-association. Therefore, these measures 
-rank not only class-associated variables high, but also variables that only 
-discriminate well between groups of classes. This is problematic, if only 
-class-associated variables are to be identified.\cr
-Similar to conventional VIMs, the \emph{discriminatory VIM} measures the general 
-influence of the variables.\cr\cr
-NOTE: To learn about the shapes of the influences of the variables with the largest 
-multi-class VIM values on the multi-class outcome, it is crucial to apply the 
-\code{\link{plot.multifor}} function to the \code{multifor} object. Two further 
-plot functions are \code{\link{plotMcl}} and \code{\link{plotVar}}.\cr\cr
-NOTE also: The purpose of the multi forest algorithm is mainly to calculate 
-the multi-class VIM values. A large-scale real data comparison study in 
-Hornung & Hapfelmeier (2024) revealed that multi forests often have a slightly 
-lower predictive performance than conventional random forests. This was 
-especially true with respect to calibration and for data sets with many outcome classes. 
-Therefore, if it is important to maximize the predictive performance or for 
-data sets with many classes, for prediction other classifiers than multi 
-forests (e.g. conventional random forests) should be explored.
+Constructs a random forest for multi-class outcomes and calculates the class-focused variable importance measure (VIM) and the discriminatory VIM.\cr
+The class-focused VIM ranks the covariates with respect to their ability to distinguish individual outcome classes from all others, which can be important in multi-class prediction tasks (see "Details" below). The discriminatory VIM, in contrast, similarly to conventional VIMs, measures the overall influence of covariates on classification performance, regardless of their relevance to individual classes.
 }
 \details{
-The multi-class VIM is only calculated for variables that feature at least as
-many unique values as there are outcome classes.\cr
-Before learning the multi forest,
+Covariates targeted by the \emph{class-focused VIM}, which specifically help distinguish individual outcome classes from the others are hereafter referred to as "class-related covariates". The primary motivation for identifying class-related covariates is frequently the interpretation of covariate effects.\cr
+Potential example applications include cancer subtyping (identifying biomarkers predictive of specific subtypes, e.g., luminal A, HER2-positive, rather than broad groups, e.g., hormone-driven vs. non-hormone-driven cancers), voting studies (covariates specifically associated with support for individual parties rather than general ideological orientation), and forensic science (detecting covariates specific to crime types like burglary or cybercrime rather than broadly violent vs. non-violent offenses).\cr
+In contrast to the class-focused VIM, conventional VIMs, 
+such as the permutation VIM or the Gini importance, and the \emph{discriminatory VIM} measure the overall influence 
+of variables regardless of their class-relatedness Therefore, these measures 
+rank not only class-related variables high, but also variables that only 
+discriminate well between groups of classes. This is problematic, if only 
+class-related variables are to be identified.\cr
+NOTE: To learn about the shapes of the influences of the variables with the largest 
+class-focused VIM values on the multi-class outcome, it is crucial to apply the 
+\code{\link{plot.multifor}} function to the \code{multifor} object. Two further related
+plot functions are \code{\link{plotMcl}} and \code{\link{plotVar}}.\cr
+NOTE ALSO: This methodology is based on work currently under peer review. A reference will be added once the corresponding paper is published.\cr\cr
+The class-focused VIM requires that all variables are ordered. For this reason, before constructing the random forest,
 the categories of unordered categorical variables are ordered using an approach
 by Coppersmith et al. (1999), which ensures that close categories feature similar 
 outcome class distributions. This approach is also used in the \code{ranger} R package,
@@ -147,7 +136,7 @@ data(ctg)
 
 
 
-## Construct a multi forest:
+## Construct a random forest:
 
 model <- multifor(dependent.variable.name = "CLASS", data = ctg, 
                   num.trees = 20)
@@ -167,29 +156,29 @@ model$prediction.error
 
 
 
-## Inspect the multi-class and the discriminatory VIM values:
+## Inspect the class-focused and the discriminatory VIM values:
 
-model$var.imp.multiclass
+model$class_foc_vim
 
-# --> Note that there are no multi-class VIM values for some of the variables.
+# --> Note that there are no class-focused VIM values for some of the variables.
 # These are those for which there are fewer unique values than outcome classes.
 # See the "Details" section above.
 
-model$var.imp.discr
+model$discr_vim
 
 
-## Inspect the 5 variables with the largest multi-class VIM values and the
+## Inspect the 5 variables with the largest class-focused VIM values and the
 ## 5 variables with the largest discriminatory VIM values:
 
-sort(model$var.imp.multiclass, decreasing = TRUE)[1:5]
+sort(model$class_foc_vim, decreasing = TRUE)[1:5]
 
-sort(model$var.imp.discr, decreasing = TRUE)[1:5]
+sort(model$discr_vim, decreasing = TRUE)[1:5]
 
 
 
 ## Instead of passing the name of the outcome variable through the 
 ## 'dependent.variable.name' argument as above, the formula interface can also 
-## be used. Below, we fit a multi forest with only the first five variables 
+## be used. Below, we fit a random forest with only the first five variables 
 ## from the 'ctg' data set:
 
 model <- multifor(CLASS ~ b + e + LBE + LB + AC, data=ctg, num.trees = 20)
@@ -202,7 +191,7 @@ model$prediction.error
 
 
 
-## NOTE: Visual exploration of the results of the multi-class VIM analysis
+## NOTE: Visual exploration of the results of the class-focused VIM analysis
 ## is crucial.
 ## Therefore, in practice the next step would be to apply the
 ## 'plot.multifor' function to the object 'model'.
@@ -224,7 +213,7 @@ train.idx <- sample(nrow(ctg), 2/3 * nrow(ctg))
 ctg.train <- ctg[train.idx, ]
 ctg.test <- ctg[-train.idx, ]
 
-# Construct multi forest on training data:
+# Construct random forest on training data:
 # NOTE again: num.trees = 20 is specified too small for practical purposes.
 model_train <- multifor(dependent.variable.name = "CLASS", data = ctg.train, 
                         importance = "none", probability = FALSE, 
@@ -272,7 +261,6 @@ table(ctg.test$CLASS, pred_classes)
 }
 \references{
 \itemize{
-  \item Hornung, R., Hapfelmeier, A. (2024). Multi forests: Variable importance for multi-class outcomes. arXiv:2409.08925, <\doi{10.48550/arXiv.2409.08925}>.
   \item Hornung, R. (2022). Diversity forests: Using split sampling to enable innovative complex split procedures in random forests. SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
   \item Wright, M. N., Ziegler, A. (2017). ranger: A fast implementation of random forests for high dimensional data in C++ and R. Journal of Statistical Software 77:1-17, <\doi{10.18637/jss.v077.i01}>.
   \item Breiman, L. (2001). Random forests. Machine Learning 45:5-32, <\doi{10.1023/A:1010933404324}>.

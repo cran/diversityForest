@@ -2,7 +2,7 @@
 % Please edit documentation in R/predict.multifor.R
 \name{predict.multifor}
 \alias{predict.multifor}
-\title{Multi forest prediction}
+\title{Random forest prediction using a saved forest from \code{multifor}}
 \usage{
 \method{predict}{multifor}(
   object,

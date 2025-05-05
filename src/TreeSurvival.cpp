@@ -102,14 +102,14 @@ bool TreeSurvival::splitNodeInternal(size_t nodeID, std::vector<size_t>& possibl
   }
 }
 
-// asdf: New function: Split node using univariate, binary splitting:
+// New function: Split node using univariate, binary splitting:
 bool TreeSurvival::splitNodeUnivariateInternal(size_t nodeID, std::vector<std::pair<size_t, double>> sampled_varIDs_values) {
 
   // Find best split, stop if no improvement in split criterion value
   return findBestSplitUnivariate(nodeID, sampled_varIDs_values);
 }
 
-// asdf: New function: Split node using univariate, binary splitting:
+// New function: Split node using univariate, binary splitting:
 bool TreeSurvival::splitNodeMultivariateInternal(size_t nodeID, std::vector<size_t> sampled_split_types, std::vector<std::vector<size_t>> sampled_split_multvarIDs, std::vector<std::vector<std::vector<bool>>> sampled_split_directs, std::vector<std::vector<std::vector<double>>> sampled_split_multvalues) {
 
   // Find best split, stop if no improvement in split criterion value

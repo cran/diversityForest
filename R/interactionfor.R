@@ -962,8 +962,7 @@ interactionfor <- function(formula = NULL, data = NULL, importance = "both", num
                       save.memory, splitrule.num, case.weights, use.case.weights, class.weights, 
                       predict.all, keep.inbag, sample.fraction, alpha=0.5, minprop=0.1, holdout, prediction.type, 
                       num.random.splits, sparse.data, use.sparse.data, order.snps, oob.error, max.depth.eim, 
-                      inbag, use.inbag, nsplits=30, npairs, proptry=1, divfortype=2, promispairs, eim.mode,
-					  metricind=numeric(0))
+                      inbag, use.inbag, nsplits=30, npairs, proptry=1, divfortype=2, promispairs, eim.mode)
   
   if (importance != "none" & simplify.large.n & maxdepthnull & nrow(data) > 1000) {
     importance.mode.forest <- 0
@@ -976,8 +975,7 @@ interactionfor <- function(formula = NULL, data = NULL, importance = "both", num
                         save.memory, splitrule.num, case.weights, use.case.weights, class.weights, 
                         predict.all, keep.inbag, sample.fraction, alpha=0.5, minprop=0.1, holdout, prediction.type, 
                         num.random.splits, sparse.data, use.sparse.data, order.snps, oob.error, max.depth, 
-                        inbag, use.inbag, nsplits=30, npairs, proptry=1, divfortype=2, promispairs, eim.mode,
-						metricind=numeric(0))
+                        inbag, use.inbag, nsplits=30, npairs, proptry=1, divfortype=2, promispairs, eim.mode)
     result$forest <- resultforest$forest
     result$num.trees <- resultforest$num.trees
   }

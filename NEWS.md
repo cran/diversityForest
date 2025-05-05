@@ -1,5 +1,9 @@
 # News for Package 'diversityForest'
 
+## Version 0.6.0
+
+* The algorithm for calculating the class-focused (formerly 'multi-class') VIM and the discriminatory VIM has been substantially revised.
+
 ## Version 0.5.0
 
 * Multi forests (diversity forest variant tailored for multi-class outcomes) added together with the multi-class and the discriminatory VIM

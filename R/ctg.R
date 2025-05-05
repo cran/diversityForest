@@ -20,7 +20,6 @@
 ##'   \item \code{DL}. numeric. Number of light decelerations per second
 ##'   \item \code{DS}. numeric. Number of severe decelerations per second
 ##'   \item \code{DP}. numeric. Number of prolonged decelerations per second
-##'   \item \code{DR}. numeric. Number of repetitive decelerations per second
 ##'   \item \code{ASTV}. numeric. Percentage of time with abnormal short term variability
 ##'   \item \code{MSTV}. numeric. Mean value of short term variability
 ##'   \item \code{ALTV}. numeric. Percentage of time with abnormal long term variability
@@ -44,19 +43,21 @@
 ##'   \item \code{B}. REM sleep	
 ##'   \item \code{C}. Calm vigilance	
 ##'   \item \code{D}. Active vigilance	
-##'   \item \code{SH}. Shift pattern (A or Susp with shifts)	
+##'   \item \code{SH}. Shift pattern (A or SUSP with shifts)	
 ##'   \item \code{AD}. Accelerative/decelerative pattern (stress situation)			
 ##'   \item \code{DE}. Decelerative pattern (vagal stimulation)		
 ##'   \item \code{LD}. Largely decelerative pattern	
 ##'   \item \code{FS}. Flat-sinusoidal pattern (pathological state)		
-##'   \item \code{SUSP}. SUSP	suspect pattern
+##'   \item \code{SUSP}. Suspect pattern
 ##' }
 ##' This is a pre-processed version of the "Cardiotocography" data set published
-##' in the UC Irvine Machine Learning Repository. The raw data contained four
+##' in the UC Irvine Machine Learning Repository. The raw data contained the four
 ##' additional variables \code{Date}, \code{FileName}, \code{SegFile}, and \code{NSP},
-##' which were removed in this version of the data.
+##' which were removed in this version of the data. Moreover, the variable \code{DR}, representing 
+##' the number of repetitive decelerations per second was removed as well because
+##' it was 0 for all observations.
 ##' 
-##' @format A data frame with 2126 observations, 25 covariates and one 10-class outcome variable
+##' @format A data frame with 2126 observations, 24 covariates and one 10-class outcome variable
 ##' @source UC Irvine Machine Learning Repository, link: \url{https://archive.ics.uci.edu/dataset/193/cardiotocography/} (Accessed: 29/08/2024)
 ##'
 ##' @examples

@@ -99,7 +99,7 @@ print.multifor <- function(x, ...) {
   cat("Number of trees:                 ", x$num.trees, "\n")
   cat("Sample size:                     ", x$num.samples, "\n")
   cat("Number of independent variables: ", x$num.independent.variables, "\n")
-  cat("Mtry:                            ", x$mtry, "\n")
+  cat("nvar:                            ", x$nvar, "\n")
   cat("Target node size:                ", x$min.node.size, "\n")
   if (x$treetype == "Classification") {
     cat("OOB prediction error:            ", sprintf("%1.2f %%", 100*x$prediction.error), "\n")

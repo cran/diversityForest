@@ -60,8 +60,7 @@ Rcpp::List divforCpp(uint treetype, std::string dependent_variable_name, Rcpp::N
                      std::vector<double> &sample_fraction, double alpha, double minprop, bool holdout, uint prediction_type_r,
                      uint num_random_splits, Eigen::SparseMatrix<double> &sparse_data, bool use_sparse_data, bool order_snps,
                      bool oob_error, uint max_depth, std::vector<std::vector<size_t>> &inbag, bool use_inbag, uint nsplits, uint npairs, double proptry, 
-					 uint divfortype, std::vector<std::vector<size_t>> &promispairs, uint eim_mode,
-					 std::vector<size_t> &metricind)
+					 uint divfortype, std::vector<std::vector<size_t>> &promispairs, uint eim_mode)
 {
 
   Rcpp::List result;
@@ -172,7 +171,7 @@ Rcpp::List divforCpp(uint treetype, std::string dependent_variable_name, Rcpp::N
                   importance_mode, min_node_size, split_select_weights, always_split_variable_names, status_variable_name,
                   prediction_mode, sample_with_replacement, unordered_variable_names, save_memory, splitrule, case_weights,
                   inbag, predict_all, keep_inbag, sample_fraction, nsplits, npairs, proptry, alpha, minprop, holdout, prediction_type, num_random_splits,
-                  order_snps, max_depth, promispairs, eim_mode, divfortype, metricind);
+                  order_snps, max_depth, promispairs, eim_mode, divfortype);
 
     // Load forest object if in prediction mode
     if (prediction_mode)
@@ -321,18 +320,18 @@ Rcpp::List divforCpp(uint treetype, std::string dependent_variable_name, Rcpp::N
       }
       if (divfortype == 3)
       {
-        if (importance_mode == MUWIMP_MULTIWAY || importance_mode == MUWIMP_BOTH)
+        if (importance_mode == MUWIMP_CLASSFOC || importance_mode == MUWIMP_BOTH)
         {
           if (treetype == TREE_CLASSIFICATION)
           {
             auto &temp = dynamic_cast<ForestClassification &>(*forest);
-            result.push_back(temp.getVariableImportanceMuwMultiway(), "var.imp.multiclass");
+            result.push_back(temp.getVariableImportanceMuwMultiway(), "class_foc_vim");
           }
 
           if (treetype == TREE_PROBABILITY)
           {
             auto &temp = dynamic_cast<ForestProbability &>(*forest);
-            result.push_back(temp.getVariableImportanceMuwMultiway(), "var.imp.multiclass");
+            result.push_back(temp.getVariableImportanceMuwMultiway(), "class_foc_vim");
           }
 
         }
@@ -342,13 +341,13 @@ Rcpp::List divforCpp(uint treetype, std::string dependent_variable_name, Rcpp::N
           if (treetype == TREE_CLASSIFICATION)
           {
             auto &temp = dynamic_cast<ForestClassification &>(*forest);
-            result.push_back(temp.getVariableImportanceMuwDiscr(), "var.imp.discr");
+            result.push_back(temp.getVariableImportanceMuwDiscr(), "discr_vim");
           }
 
           if (treetype == TREE_PROBABILITY)
           {
             auto &temp = dynamic_cast<ForestProbability &>(*forest);
-            result.push_back(temp.getVariableImportanceMuwDiscr(), "var.imp.discr");
+            result.push_back(temp.getVariableImportanceMuwDiscr(), "discr_vim");
           }
         }
 
@@ -387,15 +386,14 @@ Rcpp::List divforCpp(uint treetype, std::string dependent_variable_name, Rcpp::N
       {
         auto &temp = dynamic_cast<ForestClassification &>(*forest);
         forest_object.push_back(temp.getSplitMuwValues(), "split.muwvalues");
-        forest_object.push_back(temp.getMuwInds(), "muw.inds");
         forest_object.push_back(temp.getClassValues(), "class.values");
         forest_object.push_back(temp.getChildMuwNodeIDs(), "child.muwnodeIDs");
       }
       else if (treetype == TREE_PROBABILITY)
       {
         auto &temp = dynamic_cast<ForestProbability &>(*forest);
+        forest_object.push_back(temp.getSplitMuwVarIDs(), "split.muwvarIDs");		
         forest_object.push_back(temp.getSplitMuwValues(), "split.muwvalues");
-        forest_object.push_back(temp.getMuwInds(), "muw.inds");
         forest_object.push_back(temp.getClassValues(), "class.values");
         forest_object.push_back(temp.getTerminalClassCounts(), "terminal.class.counts");
         forest_object.push_back(temp.getChildMuwNodeIDs(), "child.muwnodeIDs");

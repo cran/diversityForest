@@ -28,11 +28,12 @@ plotMcl(
 \item{plotit}{This states whether the plots are actually plotted or merely returned as \code{ggplot} objects. Default is \code{TRUE}.}
 }
 \value{
-A list of ggplot2 plots returned invisibly.
+A list returned invisibly. The list has length equal to the number of elements in \code{varnames}. 
+Each element corresponds to one variable and contains a list of \code{ggplot2} plots structured as in the output of \code{\link{plotVar}}.
 }
 \description{
 This function allows to visualise the (estimated) distributions of one or several variables for each of the classes of the outcomes.
-This allows to study how exactly variables of interest influence the outcome, which is crucial for interpretive purposes.
+This allows to study how exactly variables of interest are associated with the outcome, which is crucial for interpretive purposes.
 Two types of visualisations are available: density plots and boxplots. See the 'Details' section below for further explanation.
 }
 \details{
@@ -64,7 +65,7 @@ The \code{"boxplot"} plots show the (estimated) within-class distributions
 side by side using boxplots. All classes are considered, even those represented 
 by only a single observation. For the \code{plot_type="both"} option, which 
 displays both \code{"density"} and \code{"boxplot"} plots, the boxplots are 
-displayed using the same colors and ( if applicable) line styles as the kernel 
+displayed using the same colors and (if applicable) line styles as the kernel 
 density estimates, for clarity. Boxplots of classes for which no kernel density 
 estimates were obtained (i.e., those of the classes represented by single 
 observations) are shown in grey. 
@@ -119,10 +120,10 @@ ps <- plotMcl(data = hars, yvarname = "Activity", varnames =
 ## The plots can be manipulated later by using ggplot2 functionalities:
 
 library("ggplot2")
-p1 <- ps[[1]] + ggtitle("First variable in the dataset") + 
+p1 <- ps[[1]]$dens_pl + ggtitle("First variable in the dataset") + 
   labs(x="Variable values", y="my scaled density")
 
-p2 <- ps[[3]] + ggtitle("Third variable in the dataset") + 
+p2 <- ps[[3]]$dens_pl + ggtitle("Third variable in the dataset") + 
   labs(x="Variable values", y="my scaled density")
 
 
@@ -140,7 +141,6 @@ p
 }
 \references{
 \itemize{
-  \item Hornung, R., Hapfelmeier, A. (2024). Multi forests: Variable importance for multi-class outcomes. arXiv:2409.08925, <\doi{10.48550/arXiv.2409.08925}>.
   \item Hornung, R. (2022). Diversity forests: Using split sampling to enable innovative complex split procedures in random forests. SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
   }
 }

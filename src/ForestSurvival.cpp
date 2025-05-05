@@ -79,11 +79,11 @@ void ForestSurvival::initInternal(std::string status_variable_name) {
     mtry = std::max((unsigned long) 1, temp);
   }
   
-      // If proptry not set, use floored square root of number of independent variables divided by number of independent variables. // asdf
-  if (proptry == 0.0) { // asdf
-    double temp = sqrt((double) (num_variables - 1)) / (double) (num_variables - 1); // asdf
-    proptry = std::min((double) 1, temp); // asdf
-  } // asdf
+      // If proptry not set, use floored square root of number of independent variables divided by number of independent variables.
+  if (proptry == 0.0) {
+    double temp = sqrt((double) (num_variables - 1)) / (double) (num_variables - 1);
+    proptry = std::min((double) 1, temp);
+  }
 
   // Set minimal node size
   if (min_node_size == 0) {

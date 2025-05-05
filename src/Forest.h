@@ -46,13 +46,13 @@ public:
       bool memory_saving_splitting, SplitRule splitrule, std::vector<double>& case_weights,
       std::vector<std::vector<size_t>>& manual_inbag, bool predict_all, bool keep_inbag,
       std::vector<double>& sample_fraction, uint nsplits, uint npairs, double proptry, double alpha, double minprop, bool holdout, PredictionType prediction_type,
-      uint num_random_splits, bool order_snps, uint max_depth, std::vector<std::vector<size_t>>& promispairs, uint& eim_mode, uint& divfortype, std::vector<size_t>& metricind);
+      uint num_random_splits, bool order_snps, uint max_depth, std::vector<std::vector<size_t>>& promispairs, uint& eim_mode, uint& divfortype);
   void init(std::string dependent_variable_name, MemoryMode memory_mode, std::unique_ptr<Data> input_data, uint mtry,
       std::string output_prefix, uint num_trees, uint seed, uint num_threads, ImportanceMode importance_mode,
       uint min_node_size, std::string status_variable_name, bool prediction_mode, bool sample_with_replacement,
       const std::vector<std::string>& unordered_variable_names, bool memory_saving_splitting, SplitRule splitrule,
       bool predict_all, std::vector<double>& sample_fraction, uint nsplits, uint npairs, double proptry, double alpha, double minprop, bool holdout,
-      PredictionType prediction_type, uint num_random_splits, bool order_snps, uint max_depth, std::vector<std::vector<size_t>>& promispairs, uint eim_mode, uint divfortype, std::vector<size_t>& metricind);
+      PredictionType prediction_type, uint num_random_splits, bool order_snps, uint max_depth, std::vector<std::vector<size_t>>& promispairs, uint eim_mode, uint divfortype);
   virtual void initInternal(std::string status_variable_name) = 0;
 
   // Grow or predict
@@ -150,15 +150,15 @@ public:
   uint getMtry() const {
     return mtry;
   }
-  uint getNsplits() const { // asdf
-    return nsplits;  // asdf
-  } // asdf
-  uint getNpairs() const { // asdf
-    return npairs;  // asdf
-  } // asdf
-      double getProptry() const { // asdf
-    return proptry;  // asdf
-  } // asdf
+  uint getNsplits() const {
+    return nsplits; 
+  }
+  uint getNpairs() const {
+    return npairs; 
+  }
+      double getProptry() const {
+    return proptry; 
+  }
   uint getMinNodeSize() const {
     return min_node_size;
   }
@@ -239,15 +239,12 @@ protected:
   PredictionType prediction_type;
   uint num_random_splits;
   uint max_depth;
-  uint nsplits; // asdf
+  uint nsplits;
   uint npairs;
-  double proptry; // asdf
+  double proptry;
   std::vector<std::vector<size_t>> promispairs;
   uint eim_mode;
   uint divfortype;
-  
-  // Multi forests: Vector of the indices of the metric variables.
-  std::vector<size_t> metricind;
   
   // MAXSTAT splitrule
   double alpha;

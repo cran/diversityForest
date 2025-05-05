@@ -22,21 +22,17 @@
 # -------------------------------------------------------------------------------
 
 ##' Plot function for \code{multifor} objects that allows to obtain a first overview of the result of the
-##' multi-class VIM analysis. This function visualises the distribution of the multi-class VIM values
+##' class-focused VIM analysis. This function visualises the distribution of the class-focused VIM values
 ##' together with that of the corresponding discriminatory VIM values and
 ##' the estimated dependency structures of the multi-class outcome on the variables 
-##' with largest multi-class VIM values. These estimated dependency structures are visualised
-##' using density plots and/or boxplots.
+##' with largest class-focused VIM values. These estimated dependency structures are visualised
+##' using kernel density estimate-based plots and/or boxplots.
 ##' 
-##' In the plot showing the distribution of the multi-class VIM values along with 
+##' In the plot showing the distribution of the class-focused VIM values along with 
 ##' that of the discriminatory VIM values, the discriminatory VIM values are 
-##' normalized to make them comparable to the multi-class VIM values. This is 
+##' normalized to make them comparable to the class-focused VIM values. This is 
 ##' achieved by dividing the discriminatory VIM values by their mean and multiplying 
-##' it by that of the multi-class VIM values. Although the discriminatory VIM 
-##' values are computed for all variables, only those variables for which the 
-##' multi-class VIM values were computed are included in this analysis (i.e., 
-##' all variables that have at least as many unique values as there are classes
-##' in the outcome variable).\cr
+##' it by that of the class-focused VIM values.\cr
 ##' For details on the plots of the estimated dependency structures of the 
 ##' multi-class outcome on the variables, see \code{\link{plotMcl}}.
 ##' The latter function allows to visualise these estimated dependency structures
@@ -44,8 +40,8 @@
 ##' 
 ##' @title Plot method for \code{multifor} objects
 ##' @param x Object of class \code{multifor}.
-##' @param plot_type Plot type, one of the following: "both" (the default), "density", "boxplot".  If "density", \code{"density"} plots are produced, if "boxplot", \code{"boxplot"} plots are produced, and if "both", both \code{"density"} plots and \code{"boxplot"} plots are produced. See the 'Details' section of \code{\link{plotMcl}} for details.
-##' @param num_best The number of variables with largest multi-class VIM values to plot. Default is 5.
+##' @param plot_type Plot type, one of the following: "both" (the default), "density", "boxplot".  If "density", kernel density estimate-based plots are produced, if "boxplot", boxplot plots are produced, and if "both", both kernel density estimate-based plots and boxplot plots are produced. See the 'Details' section of \code{\link{plotMcl}} for details.
+##' @param num_best The number of variables with largest class-focused VIM values to plot. Default is 5.
 ##' @param ... Further arguments passed to or from other methods.
 ##' @return A ggplot2 plot.
 ##' @examples
@@ -63,7 +59,7 @@
 ##' 
 ##' 
 ##' 
-##' ## Construct multi forest and calculate multi-class and discriminatory VIM values:
+##' ## Construct random forest and calculate class-focused and discriminatory VIM values:
 ##' 
 ##' data(hars)
 ##' model <- multifor(dependent.variable.name = "Activity", data = hars, 
@@ -78,11 +74,11 @@
 ##' 
 ##' 
 ##' ## By default the estimated class-specific distributions of the num_best=5
-##' ## variables with the largest multi-class VIM values are plotted:
+##' ## variables with the largest class-focused VIM values are plotted:
 ##' 
 ##' plot(model)
 ##' 
-##' ## Consider only the 2 variables with the largest multi-class VIM values:
+##' ## Consider only the 2 variables with the largest class-focused VIM values:
 ##' 
 ##' plot(model, num_best = 2)
 ##' 
@@ -91,7 +87,7 @@
 ##' plot(model, plot_type = "density", num_best = 2)
 ##' plot(model, plot_type = "boxplot", num_best = 2)
 ##' 
-##' ## Show only the plot of the distributions of the multi-class and
+##' ## Show only the plot of the distributions of the class-focused and
 ##' ## discriminatory VIM values:
 ##' 
 ##' plot(model, num_best = 0)
@@ -101,7 +97,6 @@
 ##' @author Roman Hornung
 ##' @references
 ##' \itemize{
-##'   \item Hornung, R., Hapfelmeier, A. (2024). Multi forests: Variable importance for multi-class outcomes. arXiv:2409.08925, <\doi{10.48550/arXiv.2409.08925}>.
 ##'   \item Hornung, R. (2022). Diversity forests: Using split sampling to enable innovative complex split procedures in random forests. SN Computer Science 3(2):1, <\doi{10.1007/s42979-021-00920-1}>.
 ##'   }
 ##' @seealso \code{\link{plotMcl}}
@@ -115,14 +110,14 @@ plot.multifor <- function(x, plot_type=c("both", "density", "boxplot")[1], num_b
   if (num_best < 0)
     stop("'num_best' must be an integer greater than or equal to zero.")
   
-  # Extract the multi-class and discriminatory VIM values sort the values in
+  # Extract the class-focused and discriminatory VIM values sort the values in
   # decreasing order according to the multi-clas VIM values:
   
-  vim_multiclass <- x$var.imp.multiclass
-  vim_discr <- x$var.imp.discr
+  vim_multiclass <- x$class_foc_vim
+  vim_discr <- x$discr_vim
   
   if (all(is.na(vim_multiclass)))
-    stop("There are no (non-NA) multi-class VIM values.")
+    stop("There are no (non-NA) class-focused VIM values.")
   
   vim_multiclass_noNA <- vim_multiclass[!is.na(vim_multiclass)]
   vim_discr_noNA <- vim_discr[!is.na(vim_multiclass)]
@@ -133,13 +128,13 @@ plot.multifor <- function(x, plot_type=c("both", "density", "boxplot")[1], num_b
   
   
   # Rescale the discriminatory VIM values, so that they have the same
-  # mean as the multi-class VIM values. This is done so that the two types of
+  # mean as the class-focused VIM values. This is done so that the two types of
   # VIM can be compared visually:
   
   vim_discr_order_resc <- vim_discr_order*mean(vim_multiclass_order)/mean(vim_discr_order)
   
   
-  # Plot the multi-class and discriminatory VIM values:
+  # Plot the class-focused and discriminatory VIM values:
   
   vim_multiclass_names <- names(vim_multiclass_order)
   
@@ -147,7 +142,7 @@ plot.multifor <- function(x, plot_type=c("both", "density", "boxplot")[1], num_b
   y_outcome <- x$plotres$data[,x$plotres$yvarname]
   
   dataplot <- data.frame(x2=rep(1:length(vim_multiclass_order), 2), vim=c(vim_multiclass_order, vim_discr_order_resc),
-                         type=factor(rep(c("multi-class", "discriminatory (normalized)"), each=length(vim_multiclass_order)), levels=c("multi-class", "discriminatory (normalized)")))
+                         type=factor(rep(c("class-focused", "discriminatory (normalized)"), each=length(vim_multiclass_order)), levels=c("class-focused", "discriminatory (normalized)")))
   
   p <- ggplot(data=dataplot, aes(x=.data$x2, y=.data$vim, color=.data$type)) + theme_bw() + geom_point() + 
     scale_color_manual(values=c("black", "grey"), name="VIM type") + ylab("VIM value") +
@@ -160,17 +155,17 @@ plot.multifor <- function(x, plot_type=c("both", "density", "boxplot")[1], num_b
   if (num_best > 0) {
     
     if (num_best > ncol(datacov)) {
-      warning(paste0("The value num_best=", num_best, " is larger than the number of covariates with multi-class VIM values. --> The value num_best was set to ", ncol(datacov), "."))
+      warning(paste0("The value num_best=", num_best, " is larger than the number of covariates with class-focused VIM values. --> The value num_best was set to ", ncol(datacov), "."))
       num_best <- ncol(datacov)
     }
     
     
     # Make plots of the class-specific distributions of the values of the num_best
-    # covariates with the largest multi-class VIM values:
+    # covariates with the largest class-focused VIM values:
     
     for(i in 1:num_best) {
-      plot_title <- paste0(vim_multiclass_names[i], "  -  rank ", i, " according to the multi-class VIM")
-      print(plotVar(datacov[,i], y_outcome, x_label=vim_multiclass_names[i], y_label = x$plotres$yvarname, plot_title=plot_title, plot_type=plot_type))
+      plot_title <- paste0(vim_multiclass_names[i], "  -  rank ", i, " according to the class-focused VIM")
+      plotVar(datacov[,i], y_outcome, x_label=vim_multiclass_names[i], y_label = x$plotres$yvarname, plot_title=plot_title, plot_type=plot_type, plotit=TRUE)
       if(i < num_best)
         readline(prompt="Press [enter] for next plot.")
     }
